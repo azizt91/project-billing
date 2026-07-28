@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Profil Saya - ISP Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#572ba0",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#e1e3e4",
+                        "on-primary-fixed": "#260059",
+                        "inverse-on-surface": "#ebf1ff",
+                        "surface": "#f9f9ff",
+                        "surface-variant": "#dce2f3",
+                        "on-tertiary-fixed-variant": "#454748",
+                        "surface-bright": "#f9f9ff",
+                        "surface-tint": "#6f46b9",
+                        "tertiary-fixed-dim": "#c5c7c8",
+                        "surface-container": "#e7eefe",
+                        "primary-fixed": "#ebdcff",
+                        "error-container": "#ffdad6",
+                        "on-surface": "#151c27",
+                        "surface-container-low": "#f0f3ff",
+                        "secondary-fixed-dim": "#c8c2e9",
+                        "on-secondary-fixed": "#1b1735",
+                        "on-background": "#151c27",
+                        "surface-container-highest": "#dce2f3",
+                        "outline": "#7b7483",
+                        "on-primary-container": "#b994ff",
+                        "secondary-container": "#dcd5fd",
+                        "on-error-container": "#93000a",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#474363",
+                        "on-tertiary-fixed": "#191c1d",
+                        "on-surface-variant": "#4a4452",
+                        "tertiary-container": "#3a3d3e",
+                        "background": "#f9f9ff",
+                        "primary": "#340075",
+                        "on-secondary-container": "#605b7d",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed": "#e5deff",
+                        "surface-container-high": "#e2e8f8",
+                        "primary-fixed-dim": "#d3bbff",
+                        "error": "#ba1a1a",
+                        "outline-variant": "#ccc3d4",
+                        "tertiary": "#252728",
+                        "on-secondary": "#ffffff",
+                        "inverse-primary": "#d3bbff",
+                        "secondary": "#5f5a7c",
+                        "primary-container": "#4c1d95",
+                        "on-error": "#ffffff",
+                        "inverse-surface": "#2a313d",
+                        "surface-dim": "#d3daea",
+                        "on-tertiary-container": "#a6a7a8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "sidebar-width": "260px",
+                        "stack-sm": "0.5rem",
+                        "gutter": "1.5rem",
+                        "stack-md": "1rem",
+                        "stack-lg": "2rem",
+                        "container-padding": "2rem"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "mono-num": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "mono-num": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md h-screen flex overflow-hidden selection:bg-primary selection:text-on-primary">
+<!-- SideNavBar -->
+<nav class="hidden md:flex bg-white dark:bg-tertiary fixed left-0 top-0 h-full w-[260px] border-r border-outline-variant dark:border-outline shadow-sm dark:shadow-none flex-col py-stack-lg z-20">
+<div class="px-gutter mb-stack-lg flex items-center gap-stack-sm">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold">
+<span class="material-symbols-outlined text-[20px]">wifi</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md text-primary dark:text-inverse-primary leading-tight">ISP Portal</h1>
+<p class="font-label-md text-label-md text-secondary">Customer Dashboard</p>
+</div>
+</div>
+<ul class="flex flex-col flex-grow">
+<!-- Dashboard (Inactive) -->
+<li>
+<a class="flex items-center gap-3 px-gutter py-3 text-secondary dark:text-tertiary-fixed-dim hover:bg-surface-container dark:hover:bg-tertiary-container active:scale-95 transition-transform transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+</li>
+<!-- Riwayat Tagihan (Inactive) -->
+<li>
+<a class="flex items-center gap-3 px-gutter py-3 text-secondary dark:text-tertiary-fixed-dim hover:bg-surface-container dark:hover:bg-tertiary-container active:scale-95 transition-transform transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span>Riwayat Tagihan</span>
+</a>
+</li>
+<!-- Pengaturan Wi-Fi (Inactive) -->
+<li>
+<a class="flex items-center gap-3 px-gutter py-3 text-secondary dark:text-tertiary-fixed-dim hover:bg-surface-container dark:hover:bg-tertiary-container active:scale-95 transition-transform transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">wifi</span>
+<span>Pengaturan Wi-Fi</span>
+</a>
+</li>
+<!-- Profil Saya (Active) -->
+<li>
+<a class="flex items-center gap-3 px-gutter py-3 border-l-4 border-primary text-primary dark:text-inverse-primary font-bold bg-primary-fixed dark:bg-primary-container active:scale-95 transition-transform transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+<span>Profil Saya</span>
+</a>
+</li>
+</ul>
+<div class="px-gutter mt-auto">
+<button class="w-full flex items-center justify-center gap-2 py-2 px-4 rounded border border-outline-variant text-secondary hover:bg-surface-variant transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-md text-label-md">Keluar</span>
+</button>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 ml-0 md:ml-[260px] flex flex-col h-full overflow-y-auto bg-surface-container-low">
+<!-- TopAppBar (Mobile Only - minimal version since we are inside a destination but adapting for mobile if needed, though prompt implies desktop focus. Adding a minimal mobile header for responsiveness) -->
+<header class="md:hidden sticky top-0 w-full bg-surface dark:bg-background flex justify-between items-center h-16 px-container-padding z-10 border-b border-outline-variant">
+<h1 class="font-headline-sm text-headline-sm text-primary font-bold">Profil Saya</h1>
+<button class="p-2 text-on-surface-variant">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</header>
+<div class="p-container-padding max-w-4xl w-full mx-auto pb-24">
+<header class="mb-stack-lg hidden md:block">
+<h1 class="font-display-lg text-display-lg text-on-background">Profil Saya</h1>
+<p class="font-body-lg text-body-lg text-secondary mt-1">Kelola informasi pribadi dan keamanan akun Anda.</p>
+</header>
+<!-- Profile Edit Card -->
+<div class="bg-white rounded-xl shadow-sm border border-outline-variant max-w-[600px] overflow-hidden">
+<div class="p-stack-lg">
+<!-- Avatar Section -->
+<div class="flex flex-col items-center justify-center mb-stack-lg">
+<div class="relative group cursor-pointer">
+<img class="w-24 h-24 rounded-full object-cover border-2 border-surface-container-high shadow-sm bg-surface-variant" data-alt="A professional headshot of an individual, minimalist corporate style, bright white background, subtle soft lighting, highly detailed, realistic, conveying trust and reliability suitable for a finance or enterprise portal avatar." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCxqnq6FPxPlcSHx9I_MJ3g9R3uD9NPjHWiCg7JrU5i6YsiOZLaRlzIJJhEyjgFA1GFGe4nms3gUSpINbgaEp9gyUIUiUfDbi3g5_1sIC1hEjYDtVNZW6VyW5KbfzyeZ5-PfbdPqUGQB0HF7unOR6Y0d2vn5GcTiwqHBpraTWZhd4M8PRz5jH_AzasHKHYJDo4DnX7NhKq7wgocOB3uOjxuHCxQlP80hDOKCxIsG7TkIIaw7mNRDI9irs28yHU8LAjGXXAU1052b2zX"/>
+<div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+<span class="material-symbols-outlined text-white">photo_camera</span>
+</div>
+</div>
+<button class="mt-stack-sm text-primary hover:text-primary-container font-label-md text-label-md transition-colors bg-transparent border-none cursor-pointer">
+                            Ubah Foto
+                        </button>
+</div>
+<!-- Edit Form -->
+<form class="space-y-stack-md flex flex-col">
+<!-- Nama Lengkap -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface" for="namaLengkap">Nama Lengkap</label>
+<input class="w-full px-3 py-2 rounded-lg border border-outline-variant bg-white text-on-background focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-shadow font-body-md text-body-md placeholder-secondary-fixed-dim" id="namaLengkap" type="text" value="Budi Santoso"/>
+</div>
+<!-- Email / Username -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface" for="email">Email / Username</label>
+<input class="w-full px-3 py-2 rounded-lg border border-outline-variant bg-white text-on-background focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-shadow font-body-md text-body-md placeholder-secondary-fixed-dim" id="email" type="email" value="budi.santoso@example.com"/>
+</div>
+<hr class="border-t border-outline-variant my-stack-sm"/>
+<!-- Password Baru -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface" for="newPassword">Password Baru</label>
+<div class="relative">
+<input class="w-full px-3 py-2 pr-10 rounded-lg border border-outline-variant bg-white text-on-background focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-shadow font-body-md text-body-md placeholder-outline" id="newPassword" placeholder="Kosongkan jika tidak ingin mengubah" type="password"/>
+<button class="absolute inset-y-0 right-0 px-3 flex items-center text-secondary hover:text-on-surface focus:outline-none" type="button">
+<span class="material-symbols-outlined text-[20px]">visibility_off</span>
+</button>
+</div>
+</div>
+<!-- Konfirmasi Password -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface" for="confirmPassword">Konfirmasi Password</label>
+<div class="relative">
+<input class="w-full px-3 py-2 pr-10 rounded-lg border border-outline-variant bg-white text-on-background focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-shadow font-body-md text-body-md" id="confirmPassword" type="password"/>
+<button class="absolute inset-y-0 right-0 px-3 flex items-center text-secondary hover:text-on-surface focus:outline-none" type="button">
+<span class="material-symbols-outlined text-[20px]">visibility_off</span>
+</button>
+</div>
+</div>
+</form>
+</div>
+<!-- Card Footer -->
+<div class="px-stack-lg py-stack-md bg-surface-bright border-t border-outline-variant flex justify-end">
+<button class="bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md py-2 px-6 rounded-lg shadow-sm transition-colors active:scale-95" type="button">
+                        Simpan Perubahan
+                    </button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

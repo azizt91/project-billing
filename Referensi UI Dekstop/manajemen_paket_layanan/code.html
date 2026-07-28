@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Manajemen Paket Layanan - FiscalPro</title>
+<!-- Google Fonts: Inter & Material Symbols -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface": "#f9f9ff",
+                    "primary": "#340075",
+                    "on-surface-variant": "#4a4452",
+                    "error": "#ba1a1a",
+                    "on-secondary": "#ffffff",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed": "#ebdcff",
+                    "surface-container": "#e7eefe",
+                    "on-tertiary-fixed": "#191c1d",
+                    "inverse-primary": "#d3bbff",
+                    "surface-container-low": "#f0f3ff",
+                    "secondary": "#5f5a7c",
+                    "surface-dim": "#d3daea",
+                    "on-tertiary-container": "#a6a7a8",
+                    "tertiary-fixed-dim": "#c5c7c8",
+                    "on-background": "#151c27",
+                    "tertiary-container": "#3a3d3e",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-fixed": "#e1e3e4",
+                    "on-error-container": "#93000a",
+                    "outline-variant": "#ccc3d4",
+                    "on-primary-fixed-variant": "#572ba0",
+                    "inverse-surface": "#2a313d",
+                    "on-secondary-fixed-variant": "#474363",
+                    "secondary-fixed-dim": "#c8c2e9",
+                    "inverse-on-surface": "#ebf1ff",
+                    "primary-container": "#4c1d95",
+                    "on-primary-fixed": "#260059",
+                    "on-error": "#ffffff",
+                    "on-tertiary-fixed-variant": "#454748",
+                    "on-primary-container": "#b994ff",
+                    "surface-container-highest": "#dce2f3",
+                    "on-primary": "#ffffff",
+                    "secondary-container": "#dcd5fd",
+                    "background": "#f9f9ff",
+                    "primary-fixed-dim": "#d3bbff",
+                    "surface-variant": "#dce2f3",
+                    "surface-bright": "#f9f9ff",
+                    "on-secondary-fixed": "#1b1735",
+                    "surface-tint": "#6f46b9",
+                    "secondary-fixed": "#e5deff",
+                    "on-secondary-container": "#605b7d",
+                    "outline": "#7b7483",
+                    "on-surface": "#151c27",
+                    "error-container": "#ffdad6",
+                    "surface-container-high": "#e2e8f8",
+                    "tertiary": "#252728"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "gutter": "1.5rem",
+                    "sidebar-width": "260px",
+                    "stack-sm": "0.5rem",
+                    "container-padding": "2rem",
+                    "stack-lg": "2rem",
+                    "stack-md": "1rem"
+            },
+            "fontFamily": {
+                    "mono-num": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "mono-num": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-background text-on-background flex h-screen overflow-hidden font-body-md text-body-md antialiased">
+<!-- Shared Component: SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-[260px] bg-primary dark:bg-primary-container border-r border-outline-variant dark:border-outline shadow-sm flex flex-col py-gutter z-20">
+<!-- Brand / Header -->
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-DEFAULT bg-primary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">router</span>
+</div>
+<div>
+<h1 class="text-headline-md font-headline-md font-bold text-on-primary dark:text-on-primary-container leading-none">FiscalPro</h1>
+<p class="text-label-md font-label-md text-on-primary/70 mt-1">ISP Management</p>
+</div>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex-1 overflow-y-auto flex flex-col gap-1">
+<!-- Dashboard -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<!-- Pelanggan -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-body-md text-body-md">Pelanggan</span>
+</a>
+<!-- Tagihan -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-body-md text-body-md">Tagihan</span>
+</a>
+<!-- Pengeluaran -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-body-md text-body-md">Pengeluaran</span>
+</a>
+<!-- Laporan -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">assessment</span>
+<span class="font-body-md text-body-md">Laporan</span>
+</a>
+<!-- Paket (ACTIVE) -->
+<a class="flex items-center gap-3 px-4 py-3 border-l-4 border-inverse-primary bg-primary-container/10 text-on-primary font-bold opacity-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+<span class="font-body-md text-body-md">Paket</span>
+</a>
+<!-- Profil -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 transition-colors duration-200 mt-auto" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-body-md text-body-md">Profil</span>
+</a>
+<!-- Pengaturan -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 hover:text-on-primary hover:bg-primary-fixed-variant/20 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Pengaturan</span>
+</a>
+</nav>
+</aside>
+<!-- Main Wrapper -->
+<div class="flex-1 flex flex-col ml-[260px] w-[calc(100%-260px)] h-screen">
+<!-- Shared Component: TopAppBar -->
+<header class="bg-surface dark:bg-inverse-surface shadow-sm flex justify-between items-center h-16 px-gutter shrink-0 z-10 sticky top-0">
+<!-- Search (Left aligned as per JSON) -->
+<div class="flex-1 max-w-md relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-full py-2 pl-10 pr-4 text-body-md font-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-container-lowest transition-all" placeholder="Cari data..." type="text"/>
+</div>
+<!-- Actions & Profile -->
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="h-8 w-px bg-outline-variant mx-2"></div>
+<button class="flex items-center gap-2 hover:bg-surface-container-low py-1 px-2 rounded-lg transition-colors">
+<img alt="User Avatar" class="w-8 h-8 rounded-full object-cover border border-outline-variant" data-alt="Professional headshot of a financial manager with neutral lighting against a clean, light grey background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXUGcPlwgB1O8Q0jK6veUv5QoW0yoUur2scWPac5jsJfWqjd_0n6JQTwa6E4naH-J6bPrGNjJWJZzvdXng8MEdTrLyfy2mYELdjDnol3ICv48bD8NpoYjuGw4jteXMKcOVp6eYZd959sxHDWJJEJ9lIN4wb0j0O9sBJ6K0My4BDxwYmsNL-p2vHUGi8HuZ5LauVQp71qGZaCCO8lXbUzaHytV0o1SzR4-mf_h1JvMaioVps2MxGIPZmhiC2R-kdMPavMQfv4zUQhRM"/>
+<span class="material-symbols-outlined text-on-surface-variant">expand_more</span>
+</button>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 overflow-y-auto p-container-padding bg-surface">
+<!-- Page Header Section -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+<div>
+<h2 class="text-display-lg font-display-lg text-on-surface tracking-tight">Manajemen Paket Layanan</h2>
+<p class="text-body-lg font-body-lg text-on-surface-variant mt-2">Kelola daftar harga dan spesifikasi paket internet untuk pelanggan.</p>
+</div>
+<button class="bg-primary hover:bg-primary-container text-on-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-sm active:scale-95 group">
+<span class="material-symbols-outlined text-[20px] group-hover:rotate-90 transition-transform">add</span>
+<span class="text-label-md font-label-md">Tambah Paket Baru</span>
+</button>
+</div>
+<!-- Bento Grid / Cards Area -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+<!-- Card 1: Paket Bronze -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-24 h-24 bg-primary-fixed/30 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+<div class="flex justify-between items-start mb-4">
+<h3 class="text-headline-sm font-headline-sm text-on-surface">Paket Bronze 10 Mbps</h3>
+<!-- Using Primary Fixed for "Green/Active" to strictly adhere to design system colors -->
+<span class="bg-primary-fixed text-primary px-3 py-1 rounded-full text-label-md font-label-md flex items-center gap-1">
+<span class="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                            Aktif
+                        </span>
+</div>
+<div class="mb-6">
+<div class="flex items-baseline gap-1">
+<span class="text-label-md font-label-md text-on-surface-variant">Rp</span>
+<span class="text-display-lg font-display-lg text-on-surface">150.000</span>
+</div>
+<span class="text-body-md font-body-md text-on-surface-variant">/ bulan</span>
+</div>
+<div class="flex-grow">
+<p class="text-label-md font-label-md text-on-surface-variant uppercase mb-3">Fitur Utama</p>
+<ul class="space-y-3">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+<span class="text-body-md font-body-md text-on-surface">Unlimited Quota</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+<span class="text-body-md font-body-md text-on-surface">Fiber Optic Connection</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+<span class="text-body-md font-body-md text-on-surface">Support 24/7</span>
+</li>
+</ul>
+</div>
+<div class="mt-8 pt-4 border-t border-outline-variant flex items-center justify-end gap-3">
+<button class="text-error hover:bg-error-container/20 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+<span class="text-label-md font-label-md">Hapus</span>
+</button>
+<button class="border border-outline-variant text-primary hover:bg-surface-container-low px-4 py-2 rounded-lg text-label-md font-label-md transition-colors">
+                            Edit Paket
+                        </button>
+</div>
+</div>
+<!-- Card 2: Paket Silver -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-24 h-24 bg-primary-fixed/30 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+<div class="flex justify-between items-start mb-4">
+<h3 class="text-headline-sm font-headline-sm text-on-surface">Paket Silver 20 Mbps</h3>
+<span class="bg-primary-fixed text-primary px-3 py-1 rounded-full text-label-md font-label-md flex items-center gap-1">
+<span class="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                            Aktif
+                        </span>
+</div>
+<div class="mb-6">
+<div class="flex items-baseline gap-1">
+<span class="text-label-md font-label-md text-on-surface-variant">Rp</span>
+<span class="text-display-lg font-display-lg text-on-surface">250.000</span>
+</div>
+<span class="text-body-md font-body-md text-on-surface-variant">/ bulan</span>
+</div>
+<div class="flex-grow">
+<p class="text-label-md font-label-md text-on-surface-variant uppercase mb-3">Fitur Utama</p>
+<ul class="space-y-3">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+<span class="text-body-md font-body-md text-on-surface">Unlimited Quota</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+<span class="text-body-md font-body-md text-on-surface">Fiber Optic Connection</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+<span class="text-body-md font-body-md text-on-surface">Priority Support</span>
+</li>
+</ul>
+</div>
+<div class="mt-8 pt-4 border-t border-outline-variant flex items-center justify-end gap-3">
+<button class="text-error hover:bg-error-container/20 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+<span class="text-label-md font-label-md">Hapus</span>
+</button>
+<button class="border border-outline-variant text-primary hover:bg-surface-container-low px-4 py-2 rounded-lg text-label-md font-label-md transition-colors">
+                            Edit Paket
+                        </button>
+</div>
+</div>
+<!-- Card 3: Paket Gold -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-sm flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group">
+<!-- Highlight border top for premium tier -->
+<div class="absolute top-0 left-0 w-full h-1 bg-primary"></div>
+<div class="absolute top-0 right-0 w-24 h-24 bg-primary-fixed/30 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+<div class="flex justify-between items-start mb-4">
+<div class="flex flex-col">
+<h3 class="text-headline-sm font-headline-sm text-on-surface">Paket Gold 50 Mbps</h3>
+<span class="text-label-md font-label-md text-primary mt-1 flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">local_fire_department</span> Best Seller</span>
+</div>
+<span class="bg-primary-fixed text-primary px-3 py-1 rounded-full text-label-md font-label-md flex items-center gap-1">
+<span class="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                            Aktif
+                        </span>
+</div>
+<div class="mb-6">
+<div class="flex items-baseline gap-1">
+<span class="text-label-md font-label-md text-on-surface-variant">Rp</span>
+<span class="text-display-lg font-display-lg text-on-surface">450.000</span>
+</div>
+<span class="text-body-md font-body-md text-on-surface-variant">/ bulan</span>
+</div>
+<div class="flex-grow">
+<p class="text-label-md font-label-md text-on-surface-variant uppercase mb-3">Fitur Utama</p>
+<ul class="space-y-3">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+<span class="text-body-md font-body-md text-on-surface">Unlimited Quota</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+<span class="text-body-md font-body-md text-on-surface">Dedicated IP</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+<span class="text-body-md font-body-md text-on-surface">Ultra Low Latency</span>
+</li>
+</ul>
+</div>
+<div class="mt-8 pt-4 border-t border-outline-variant flex items-center justify-end gap-3">
+<button class="text-error hover:bg-error-container/20 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+<span class="text-label-md font-label-md">Hapus</span>
+</button>
+<button class="border border-outline-variant text-primary hover:bg-surface-container-low px-4 py-2 rounded-lg text-label-md font-label-md transition-colors">
+                            Edit Paket
+                        </button>
+</div>
+</div>
+<!-- Card 4: Paket Custom Corporate -->
+<div class="bg-surface-container border border-outline-variant rounded-xl p-6 shadow-sm flex flex-col hover:shadow-md transition-shadow relative overflow-hidden group opacity-80 hover:opacity-100">
+<div class="flex justify-between items-start mb-4">
+<h3 class="text-headline-sm font-headline-sm text-on-surface">Paket Custom Corporate</h3>
+<span class="bg-surface-variant text-on-surface-variant px-3 py-1 rounded-full text-label-md font-label-md flex items-center gap-1">
+<span class="w-1.5 h-1.5 bg-outline rounded-full"></span>
+                            Tidak Aktif
+                        </span>
+</div>
+<div class="mb-6">
+<span class="text-body-md font-body-md text-on-surface-variant block mb-1">Mulai</span>
+<div class="flex items-baseline gap-1">
+<span class="text-label-md font-label-md text-on-surface-variant">Rp</span>
+<span class="text-display-lg font-display-lg text-on-surface">1.000.000</span>
+</div>
+</div>
+<div class="flex-grow">
+<p class="text-label-md font-label-md text-on-surface-variant uppercase mb-3">Spesifikasi</p>
+<ul class="space-y-3">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">check_circle</span>
+<span class="text-body-md font-body-md text-on-surface-variant">SLA 99.9%</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">check_circle</span>
+<span class="text-body-md font-body-md text-on-surface-variant">Custom Bandwidth</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">check_circle</span>
+<span class="text-body-md font-body-md text-on-surface-variant">Dedicated Manager</span>
+</li>
+</ul>
+</div>
+<div class="mt-8 pt-4 border-t border-outline-variant flex items-center justify-end gap-3">
+<button class="text-error hover:bg-error-container/20 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+<span class="text-label-md font-label-md">Hapus</span>
+</button>
+<button class="border border-outline-variant text-primary hover:bg-surface-container-low px-4 py-2 rounded-lg text-label-md font-label-md transition-colors">
+                            Edit Paket
+                        </button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

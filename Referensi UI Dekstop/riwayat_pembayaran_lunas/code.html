@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FiscalPro - Riwayat Pembayaran (Lunas)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-container": "#3a3d3e",
+                      "on-tertiary-fixed": "#191c1d",
+                      "on-surface-variant": "#4a4452",
+                      "inverse-surface": "#2a313d",
+                      "outline": "#7b7483",
+                      "surface-tint": "#6f46b9",
+                      "on-background": "#151c27",
+                      "background": "#f9f9ff",
+                      "on-surface": "#151c27",
+                      "primary-fixed-dim": "#d3bbff",
+                      "secondary-fixed": "#e5deff",
+                      "on-secondary": "#ffffff",
+                      "on-secondary-fixed": "#1b1735",
+                      "inverse-primary": "#d3bbff",
+                      "tertiary-fixed-dim": "#c5c7c8",
+                      "secondary-container": "#dcd5fd",
+                      "on-primary-fixed-variant": "#572ba0",
+                      "secondary-fixed-dim": "#c8c2e9",
+                      "on-error-container": "#93000a",
+                      "surface-container-highest": "#dce2f3",
+                      "surface-container-high": "#e2e8f8",
+                      "outline-variant": "#ccc3d4",
+                      "error": "#ba1a1a",
+                      "surface": "#f9f9ff",
+                      "surface-container": "#e7eefe",
+                      "on-tertiary": "#ffffff",
+                      "surface-variant": "#dce2f3",
+                      "secondary": "#5f5a7c",
+                      "on-secondary-fixed-variant": "#474363",
+                      "on-tertiary-container": "#a6a7a8",
+                      "inverse-on-surface": "#ebf1ff",
+                      "surface-container-low": "#f0f3ff",
+                      "tertiary-fixed": "#e1e3e4",
+                      "surface-bright": "#f9f9ff",
+                      "on-primary": "#ffffff",
+                      "on-primary-fixed": "#260059",
+                      "on-tertiary-fixed-variant": "#454748",
+                      "tertiary": "#252728",
+                      "surface-dim": "#d3daea",
+                      "on-error": "#ffffff",
+                      "primary-fixed": "#ebdcff",
+                      "primary-container": "#4c1d95",
+                      "on-primary-container": "#b994ff",
+                      "error-container": "#ffdad6",
+                      "on-secondary-container": "#605b7d",
+                      "primary": "#340075",
+                      "surface-container-lowest": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "stack-md": "1rem",
+                      "sidebar-width": "260px",
+                      "gutter": "1.5rem",
+                      "stack-lg": "2rem",
+                      "container-padding": "2rem",
+                      "stack-sm": "0.5rem"
+              },
+              "fontFamily": {
+                      "headline-md": ["Inter"],
+                      "display-lg": ["Inter"],
+                      "body-md": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "headline-sm": ["Inter"],
+                      "mono-num": ["Inter"],
+                      "label-md": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "mono-num": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}]
+              }
+            },
+          }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased flex">
+<!-- SideNavBar (Shared Component JSON) -->
+<!-- The prompt says "Riwayat Lunas" is highlighted. "Tagihan" is the closest in the JSON arrays, but I need to map it carefully. Since "Riwayat Lunas" is specifically requested as a tab in the prompt but isn't explicitly in the JSON array, I will use the JSON as a blueprint and add the requested tabs, highlighting the requested one. However, the rule states: "You are strictly forbidden from altering labels, strings, product names, or icon names." But the prompt also explicitly asked for a specific active state "Riwayat Lunas". I must resolve this conflict. Rule: JSON > Prompt for content. The JSON labels are: ["Dashboard", "Pelanggan", "Faktur", "Tagihan", "Pengeluaran", "Profil"]. So I cannot add "Riwayat Lunas" as a main nav item in the sidebar if I strictly follow the JSON prohibition. However, the user prompt explicitly requested it. I will follow the JSON for the core items, and since this is a "Payment History" page, "Tagihan" (Billing) is the closest semantic match for the active state from the JSON list. -->
+<nav class="bg-primary dark:bg-primary-container text-on-primary dark:text-on-primary-container font-headline-sm text-headline-sm font-label-md text-label-md font-body-md text-body-md docked h-full w-[260px] left-0 top-0 border-r border-outline-variant shadow-sm fixed flex flex-col z-50">
+<!-- Brand/Header -->
+<div class="px-gutter py-stack-md flex items-center gap-3 border-b border-outline-variant/30">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center shrink-0 overflow-hidden">
+<span class="material-symbols-outlined text-primary" data-icon="account_balance">account_balance</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary">FiscalPro</h1>
+<p class="font-label-md text-label-md opacity-70">Enterprise Insight</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 overflow-y-auto py-stack-sm flex flex-col gap-1">
+<!-- Dashboard -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<!-- Pelanggan -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+                Pelanggan
+            </a>
+<!-- Faktur -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+                Faktur
+            </a>
+<!-- Tagihan - ACTIVE (Semantic match for Riwayat Pembayaran Lunas) -->
+<a class="flex items-center gap-3 px-4 py-3 border-l-4 border-secondary-fixed text-secondary-fixed font-bold opacity-90 scale-[0.99] transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="payments" data-weight="fill" style="font-variation-settings: 'FILL' 1;">payments</span>
+                Tagihan
+            </a>
+<!-- Pengeluaran -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+                Pengeluaran
+            </a>
+<!-- Profil -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+                Profil
+            </a>
+</div>
+<!-- CTA & Footer -->
+<div class="p-gutter flex flex-col gap-4 border-t border-outline-variant/30">
+<button class="w-full py-2 bg-secondary-fixed text-on-secondary-fixed font-label-md text-label-md rounded-lg flex items-center justify-center gap-2 hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                Add Faktur
+            </button>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+                User Settings
+            </a>
+<!-- User Avatar block as requested in prompt -->
+<div class="flex items-center gap-3 pt-2 mt-2">
+<img alt="Finance App Logo" class="w-10 h-10 rounded-full object-cover border border-outline-variant/50" data-alt="A small, professional circular avatar portrait of a business executive in a well-lit office setting. High quality, clear, neutral background. Suitable for a SaaS application profile picture." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxiKHV32-UvFfn_2dvx3hve0hcvR2YNdWZYpmr30nnT3jcMVulAmnNvx79WnrkBFU7XA-SPZQ5OXpCK4qiUbJeHQAwy60rursEH4sl-wF2tWy9-sVKYgQppDw1RdzaU632gsqxiUCcMFg4nBwAa_YJTKj8nXGKWFFQ_uMq61ytDQos3fCx8wn8gNf6fkqIrb-iiKzDASWPj1FRANKPwub_xceTSGrsRsq0LGqJ9MDi1UAPDz9njK2NxfnSuFE5xoJw7ZRjkC_jhBZk"/>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-primary">Admin User</span>
+<span class="font-body-md text-body-md text-on-primary/60 text-[11px]">admin@fiscalpro.co</span>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="ml-sidebar-width flex-1 flex flex-col min-h-screen bg-surface">
+<!-- TopAppBar (Shared Component JSON structurally) -->
+<header class="bg-surface dark:bg-background text-primary dark:text-primary-fixed-dim font-headline-md text-headline-md font-label-md text-label-md docked full-width top-0 bg-surface dark:bg-background flat no shadows ml-[260px] flex justify-between items-center px-gutter py-4 sticky top-0 z-40 bg-surface/80 backdrop-blur-md hidden md:flex w-[calc(100%-260px)] left-[260px] fixed">
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Dashboard Overview</h2>
+<div class="flex items-center gap-4">
+<!-- Search on left of trailing actions -->
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container border border-outline-variant rounded-full font-body-md text-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-64 transition-all" placeholder="Search..." type="text"/>
+</div>
+<button class="p-2 text-on-surface-variant font-medium hover:text-primary transition-colors duration-150 rounded-full hover:bg-surface-variant">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant font-medium hover:text-primary transition-colors duration-150 rounded-full hover:bg-surface-variant">
+<span class="material-symbols-outlined" data-icon="filter_list">filter_list</span>
+</button>
+<img alt="User Avatar" class="w-9 h-9 rounded-full object-cover ml-2 border border-outline-variant cursor-pointer transition-opacity duration-150" data-alt="A small, professional circular avatar portrait of a business executive. Brightly lit, corporate aesthetic. High resolution SaaS profile image." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDmW48DhNSKVIorKCNaHI6amQNIeL6bmxudCTZ840kItWQHf5LsZfo4suUjFQvIdnK2KQxLBKYb3FTYZs6SHHWk2lrC6TyAQteKJIlTyqQ2AXiSwHLZnXCdLCM14d8RwT615dd3DojDYIU8ekU-TjuCMpqLVZW0aYAJwlbaX1RrrBQorxeMHtER-DJ0WrKyvYXR6LtavvUPhtj38LPAKNycIcJu2zlYwk0BErqzOEc8lSFdhFvZeJss-w8POR4gqGxHr33dbpH-7K4h"/>
+</div>
+</header>
+<!-- Page Content Canvas -->
+<div class="p-container-padding pt-[80px] flex-1 max-w-7xl mx-auto w-full">
+<!-- Page Header & Filters -->
+<div class="mb-stack-lg space-y-stack-md">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="font-display-lg text-display-lg text-on-surface mb-2">Riwayat Pembayaran (Lunas)</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Kelola dan pantau semua transaksi pembayaran yang telah berhasil.</p>
+</div>
+</div>
+<!-- Advanced Filter Toolbar -->
+<div class="flex flex-col lg:flex-row items-center justify-between gap-4 bg-surface-container-lowest border border-outline-variant p-4 rounded-xl shadow-sm">
+<!-- Toolbar Left -->
+<div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+<div class="relative flex-1 min-w-[250px]">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none bg-surface-bright" placeholder="Cari pelanggan atau no referensi..." type="text"/>
+</div>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]" data-icon="calendar_today">calendar_today</span>
+<input class="pl-10 pr-4 py-2 border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface-bright cursor-pointer hover:border-outline transition-colors w-60" readonly="" type="text" value="01 Juli 2026 - 25 Juli 2026"/>
+</div>
+<select class="pl-4 pr-10 py-2 border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface bg-surface-bright cursor-pointer hover:border-outline transition-colors appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%22%200%22%2020%22%2020%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%207.5L10%2012.5L15%207.5%22%20stroke%3D%22%237b7483%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px_20px] bg-no-repeat bg-[position:right_10px_center]">
+<option>Semua Metode</option>
+<option>Tunai</option>
+<option>QRIS</option>
+<option>Transfer</option>
+</select>
+</div>
+<!-- Toolbar Right -->
+<div class="flex items-center gap-4 w-full lg:w-auto justify-between lg:justify-end border-t lg:border-t-0 border-outline-variant pt-4 lg:pt-0">
+<div class="font-body-md text-body-md text-on-surface-variant">
+                            Total Filtered: <span class="font-bold text-on-surface">Rp 5.250.000</span>
+</div>
+<button class="px-4 py-2 bg-surface border border-outline-variant text-primary font-label-md text-label-md rounded-lg flex items-center gap-2 hover:bg-surface-variant transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="download">download</span>
+                            Export Data
+                        </button>
+</div>
+</div>
+</div>
+<!-- Transaction Ledger Table -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant font-label-md text-label-md text-on-surface-variant uppercase">
+<th class="py-3 px-4 font-medium whitespace-nowrap">Tanggal Bayar</th>
+<th class="py-3 px-4 font-medium">Nama Pelanggan</th>
+<th class="py-3 px-4 font-medium">Periode Tagihan</th>
+<th class="py-3 px-4 font-medium">Metode</th>
+<th class="py-3 px-4 font-medium text-right">Nominal</th>
+<th class="py-3 px-4 font-medium text-center">Aksi</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md text-on-surface divide-y divide-outline-variant">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-highest/30 transition-colors">
+<td class="py-4 px-4 whitespace-nowrap">25 Jul 2026, 08:30 WIB</td>
+<td class="py-4 px-4 font-bold text-on-surface">PT Global Media Nusantara</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center px-2 py-1 rounded-md bg-surface-variant text-on-surface-variant font-label-md text-[10px]">
+                                        Jul 2026
+                                    </span>
+</td>
+<td class="py-4 px-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]" data-icon="qr_code">qr_code</span>
+                                        QRIS
+                                    </div>
+</td>
+<td class="py-4 px-4 text-right font-mono-num text-mono-num text-[#16a34a] font-semibold">Rp 1.500.000</td>
+<td class="py-4 px-4 text-center">
+<div class="flex items-center justify-center gap-2">
+<button class="p-1.5 text-outline hover:text-primary hover:bg-surface-variant rounded transition-colors" title="Cetak Struk">
+<span class="material-symbols-outlined text-[20px]" data-icon="print">print</span>
+</button>
+<button class="p-1.5 text-[#16a34a] hover:bg-[#16a34a]/10 rounded transition-colors" title="Kirim Bukti WA">
+<span class="material-symbols-outlined text-[20px]" data-icon="chat">chat</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-highest/30 transition-colors">
+<td class="py-4 px-4 whitespace-nowrap">24 Jul 2026, 14:15 WIB</td>
+<td class="py-4 px-4 font-bold text-on-surface">Budi Santoso</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center px-2 py-1 rounded-md bg-surface-variant text-on-surface-variant font-label-md text-[10px]">
+                                        Jun 2026
+                                    </span>
+</td>
+<td class="py-4 px-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]" data-icon="account_balance">account_balance</span>
+                                        Bank Transfer
+                                    </div>
+</td>
+<td class="py-4 px-4 text-right font-mono-num text-mono-num text-[#16a34a] font-semibold">Rp 350.000</td>
+<td class="py-4 px-4 text-center">
+<div class="flex items-center justify-center gap-2">
+<button class="p-1.5 text-outline hover:text-primary hover:bg-surface-variant rounded transition-colors" title="Cetak Struk">
+<span class="material-symbols-outlined text-[20px]" data-icon="print">print</span>
+</button>
+<button class="p-1.5 text-[#16a34a] hover:bg-[#16a34a]/10 rounded transition-colors" title="Kirim Bukti WA">
+<span class="material-symbols-outlined text-[20px]" data-icon="chat">chat</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-highest/30 transition-colors">
+<td class="py-4 px-4 whitespace-nowrap">24 Jul 2026, 09:00 WIB</td>
+<td class="py-4 px-4 font-bold text-on-surface">CV Karya Abadi</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center px-2 py-1 rounded-md bg-surface-variant text-on-surface-variant font-label-md text-[10px]">
+                                        Jul 2026
+                                    </span>
+</td>
+<td class="py-4 px-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]" data-icon="payments">payments</span>
+                                        Tunai
+                                    </div>
+</td>
+<td class="py-4 px-4 text-right font-mono-num text-mono-num text-[#16a34a] font-semibold">Rp 3.400.000</td>
+<td class="py-4 px-4 text-center">
+<div class="flex items-center justify-center gap-2">
+<button class="p-1.5 text-outline hover:text-primary hover:bg-surface-variant rounded transition-colors" title="Cetak Struk">
+<span class="material-symbols-outlined text-[20px]" data-icon="print">print</span>
+</button>
+<button class="p-1.5 text-[#16a34a] hover:bg-[#16a34a]/10 rounded transition-colors" title="Kirim Bukti WA">
+<span class="material-symbols-outlined text-[20px]" data-icon="chat">chat</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="p-4 border-t border-outline-variant flex items-center justify-between bg-surface-bright">
+<span class="font-body-md text-body-md text-on-surface-variant">Menampilkan 1 - 3 dari 124 data</span>
+<div class="flex items-center gap-1">
+<button class="p-2 border border-outline-variant rounded hover:bg-surface-variant text-outline transition-colors disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-[18px]" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="px-3 py-1 bg-primary text-on-primary rounded font-label-md text-label-md">1</button>
+<button class="px-3 py-1 hover:bg-surface-variant text-on-surface rounded font-label-md text-label-md transition-colors">2</button>
+<button class="px-3 py-1 hover:bg-surface-variant text-on-surface rounded font-label-md text-label-md transition-colors">3</button>
+<span class="px-2 text-outline">...</span>
+<button class="p-2 border border-outline-variant rounded hover:bg-surface-variant text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

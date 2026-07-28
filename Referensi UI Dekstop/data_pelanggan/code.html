@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FiscalPro - Data Pelanggan</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-high": "#e2e8f8",
+                      "on-tertiary-fixed": "#191c1d",
+                      "on-tertiary": "#ffffff",
+                      "on-secondary-fixed": "#1b1735",
+                      "on-primary-fixed-variant": "#572ba0",
+                      "primary-fixed-dim": "#d3bbff",
+                      "on-surface-variant": "#4a4452",
+                      "background": "#f9f9ff",
+                      "outline": "#7b7483",
+                      "tertiary-container": "#3a3d3e",
+                      "on-background": "#151c27",
+                      "tertiary-fixed-dim": "#c5c7c8",
+                      "surface-tint": "#6f46b9",
+                      "surface-container-low": "#f0f3ff",
+                      "primary-fixed": "#ebdcff",
+                      "on-primary-container": "#b994ff",
+                      "surface-container": "#e7eefe",
+                      "error": "#ba1a1a",
+                      "primary": "#340075",
+                      "on-primary-fixed": "#260059",
+                      "on-secondary": "#ffffff",
+                      "inverse-surface": "#2a313d",
+                      "surface-container-lowest": "#ffffff",
+                      "tertiary-fixed": "#e1e3e4",
+                      "secondary-fixed-dim": "#c8c2e9",
+                      "secondary-fixed": "#e5deff",
+                      "error-container": "#ffdad6",
+                      "inverse-on-surface": "#ebf1ff",
+                      "surface-dim": "#d3daea",
+                      "on-secondary-container": "#605b7d",
+                      "surface": "#f9f9ff",
+                      "on-error-container": "#93000a",
+                      "secondary": "#5f5a7c",
+                      "on-secondary-fixed-variant": "#474363",
+                      "on-error": "#ffffff",
+                      "inverse-primary": "#d3bbff",
+                      "primary-container": "#4c1d95",
+                      "outline-variant": "#ccc3d4",
+                      "surface-variant": "#dce2f3",
+                      "on-surface": "#151c27",
+                      "on-tertiary-container": "#a6a7a8",
+                      "secondary-container": "#dcd5fd",
+                      "surface-container-highest": "#dce2f3",
+                      "on-tertiary-fixed-variant": "#454748",
+                      "on-primary": "#ffffff",
+                      "tertiary": "#252728",
+                      "surface-bright": "#f9f9ff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "stack-sm": "0.5rem",
+                      "container-padding": "2rem",
+                      "stack-md": "1rem",
+                      "sidebar-width": "260px",
+                      "gutter": "1.5rem",
+                      "stack-lg": "2rem"
+              },
+              "fontFamily": {
+                      "body-md": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "mono-num": ["Inter"],
+                      "label-md": ["Inter"],
+                      "headline-sm": ["Inter"],
+                      "display-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "mono-num": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased selection:bg-primary selection:text-on-primary">
+<!-- Top Navigation Area -->
+<header class="ml-[260px] flex justify-between items-center px-gutter py-4 sticky top-0 z-40 bg-surface/80 backdrop-blur-md">
+<div class="flex items-center gap-4 w-full max-w-md">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-highest border-none rounded-full focus:ring-2 focus:ring-primary font-body-md text-body-md text-on-surface-variant outline-none transition-all" placeholder="Search..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<button class="text-on-surface-variant hover:text-primary transition-colors duration-150 relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-error rounded-full border-2 border-surface"></span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden border border-outline-variant cursor-pointer hover:border-primary transition-colors">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a person looking forward in a corporate setting. The lighting is soft and high-key, suitable for a corporate avatar. Minimalist background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyVaYhYdk3H2LcpaeD6Z1r-7gaTejlNdrh8UsXkxRiW1bUMXmfRlxCyKAKLEkjlwpKnf_CF2qTsLzxJjdFF6jaTukuoieTpdczzv52MZo3-ngilwGHvTmsjHJVSHiK1rgGLdTX7QpaPnpfwxG8DjpKP28en4uWkmGL3EGesDtcyduaRvvVhkxQhdCNxqdkK3umrqgTIWqC9bGchuSUpkR7-Db68sjWpzr-pp9zU_eZJSB6BiKh5yk75ZbWXBc40W0HwoyrJQmmghB0"/>
+</div>
+</div>
+</header>
+<!-- Side Navigation Bar -->
+<nav class="fixed left-0 top-0 h-full w-[260px] flex flex-col z-50 bg-primary dark:bg-primary-container border-r border-outline-variant shadow-sm transition-transform duration-300 md:translate-x-0 -translate-x-full">
+<div class="p-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-xl">account_balance</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary">FiscalPro</h1>
+<p class="font-label-md text-label-md text-on-primary/70">Enterprise Insight</p>
+</div>
+</div>
+</div>
+<div class="px-4 pb-4">
+<button class="w-full py-3 px-4 bg-primary-container hover:bg-primary-container/90 text-on-primary rounded-lg font-label-md text-label-md font-bold flex items-center justify-center gap-2 transition-all shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+                Add Faktur
+            </button>
+</div>
+<div class="flex-1 overflow-y-auto py-2">
+<ul class="space-y-1">
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 border-l-4 border-secondary-fixed text-secondary-fixed font-bold bg-on-primary/5 opacity-90 scale-[0.99] transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="group" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-label-md text-label-md">Pelanggan</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="font-label-md text-label-md">Faktur</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-label-md text-label-md">Tagihan</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-label-md text-label-md">Pengeluaran</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-md text-label-md">Profil</span>
+</a>
+</li>
+</ul>
+</div>
+<div class="p-4 mt-auto border-t border-outline-variant/20">
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">User Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="ml-[260px] min-h-screen px-container-padding py-6">
+<!-- Header & Actions -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
+<div>
+<h2 class="font-display-lg text-display-lg text-on-background mb-2">Data Pelanggan</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Kelola informasi dan status pelanggan Anda.</p>
+</div>
+<button class="bg-primary hover:bg-primary-container text-on-primary px-6 py-3 rounded-lg font-label-md text-label-md shadow-sm transition-colors flex items-center gap-2 shrink-0">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">add</span>
+                Tambah Pelanggan
+            </button>
+</div>
+<!-- Filters & Search Bar -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/50 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+<div class="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-hide">
+<button class="px-4 py-1.5 rounded-full bg-primary-container text-on-primary font-label-md text-label-md shrink-0 transition-colors">Semua</button>
+<button class="px-4 py-1.5 rounded-full bg-surface-container hover:bg-surface-variant text-on-surface-variant font-label-md text-label-md shrink-0 transition-colors border border-outline-variant/30">Aktif</button>
+<button class="px-4 py-1.5 rounded-full bg-surface-container hover:bg-surface-variant text-on-surface-variant font-label-md text-label-md shrink-0 transition-colors border border-outline-variant/30">Tidak Aktif</button>
+</div>
+<div class="relative w-full md:w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-background border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary focus:border-primary font-body-md text-body-md text-on-background outline-none transition-all" placeholder="Cari pelanggan..." type="text"/>
+</div>
+</div>
+<!-- Data Table -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/50 overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant/50 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
+<th class="px-6 py-4 font-medium">Pelanggan</th>
+<th class="px-6 py-4 font-medium">Terdaftar</th>
+<th class="px-6 py-4 font-medium">Status</th>
+<th class="px-6 py-4 font-medium text-right">Aksi</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30 bg-surface-container-lowest">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-lowest/50 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-fixed-dim shrink-0 overflow-hidden">
+<img alt="Budi Santoso" class="w-full h-full object-cover" data-alt="A close up portrait of an Indonesian man in business casual attire smiling lightly against a white background. Soft, clean corporate lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCsNx7cgR4mNl61rHg6lLYC-TDRNkU8zYEMG0MAOerUsvXJLP__eQ1tvOakcA16AiGjBbSexqLIPYyTMVIW48XB2eMqLr6jG6iabSM7kZOD85zLvDy-ozsUsnRvQAAAcA2EN0yKKe3AxF2aVDvGDl7YYRTyQBq_EPD7IMFlap2z_EzJL7claM2jPnaqJFTZCS1Cb9kl2HNmBU2NLfIUc8bqB3UWdolFF1q52NiBu6GIPfO1W5F9cPvB-B0p3e2aamwsLziEYwxCk-HG"/>
+</div>
+<div>
+<div class="font-body-md text-body-md font-medium text-on-background">Budi Santoso</div>
+<div class="font-label-md text-label-md text-outline">budi.s@example.com</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap font-mono-num text-mono-num text-on-surface-variant">
+                                12 Mei 2026
+                            </td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary-fixed text-primary-container">
+                                    Aktif
+                                </span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right font-medium">
+<button class="text-outline hover:text-primary transition-colors p-1" title="Edit">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="text-outline hover:text-error transition-colors p-1 ml-2" title="Delete">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-lowest/50 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-secondary-container shrink-0 overflow-hidden">
+<img alt="Siti Aminah" class="w-full h-full object-cover" data-alt="A portrait of an Indonesian woman wearing a professional blazer looking directly at the camera. Soft corporate lighting with a minimalist background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhy9J9m_eCXzfG-pZm4EB_p0FZBBbvseLM1YxUpjfUDhrosv-AgQPEPQC_8oIwD5zlppm9IJsAC2r8eW6pcuHy0XHXU2Dvb4MCmzNOeIMAg0oNxmepjEC5-RU_cuvas_Fj1MA9OwsbUPhriFRK0QcpwCn95wUb0Y05iDFWXycu1iBS9VCt3d5jCNwJ_usRYRinYccJY5xFdeKG8CU7ODuY4jXDKTsD5xuQbV6JGOwYCibIkmFSA5pGhBYGyOKscli2uJXEynFPtYSz"/>
+</div>
+<div>
+<div class="font-body-md text-body-md font-medium text-on-background">Siti Aminah</div>
+<div class="font-label-md text-label-md text-outline">siti.a@corp.id</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap font-mono-num text-mono-num text-on-surface-variant">
+                                28 Apr 2026
+                            </td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary-fixed text-primary-container">
+                                    Aktif
+                                </span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right font-medium">
+<button class="text-outline hover:text-primary transition-colors p-1" title="Edit">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="text-outline hover:text-error transition-colors p-1 ml-2" title="Delete">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-lowest/50 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-error-container text-on-error-container flex items-center justify-center font-bold text-sm shrink-0">
+                                        AN
+                                    </div>
+<div>
+<div class="font-body-md text-body-md font-medium text-on-background">Ahmad Nur</div>
+<div class="font-label-md text-label-md text-outline">ahmad.n@startup.com</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap font-mono-num text-mono-num text-on-surface-variant">
+                                05 Mar 2026
+                            </td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-error-container text-on-error-container">
+                                    Tidak Aktif
+                                </span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right font-medium">
+<button class="text-outline hover:text-primary transition-colors p-1" title="Edit">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="text-outline hover:text-error transition-colors p-1 ml-2" title="Delete">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="px-6 py-4 bg-surface-container-lowest border-t border-outline-variant/50 flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant">Menampilkan 1-3 dari 45 pelanggan</span>
+<div class="flex items-center gap-2">
+<button class="p-1 text-outline hover:text-primary transition-colors disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="p-1 text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

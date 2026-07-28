@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pengaturan Aplikasi - FiscalPro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#e7eefe",
+                        "tertiary-container": "#3a3d3e",
+                        "surface-bright": "#f9f9ff",
+                        "tertiary-fixed-dim": "#c5c7c8",
+                        "tertiary-fixed": "#e1e3e4",
+                        "on-secondary-fixed": "#1b1735",
+                        "surface-tint": "#6f46b9",
+                        "surface-container-lowest": "#ffffff",
+                        "outline-variant": "#ccc3d4",
+                        "on-tertiary-container": "#a6a7a8",
+                        "error-container": "#ffdad6",
+                        "background": "#f9f9ff",
+                        "on-tertiary-fixed-variant": "#454748",
+                        "primary-fixed": "#ebdcff",
+                        "on-tertiary-fixed": "#191c1d",
+                        "secondary-fixed-dim": "#c8c2e9",
+                        "inverse-on-surface": "#ebf1ff",
+                        "secondary-fixed": "#e5deff",
+                        "on-primary": "#ffffff",
+                        "surface-variant": "#dce2f3",
+                        "surface": "#f9f9ff",
+                        "secondary": "#5f5a7c",
+                        "inverse-primary": "#d3bbff",
+                        "surface-container-low": "#f0f3ff",
+                        "primary": "#340075",
+                        "on-error-container": "#93000a",
+                        "on-secondary-container": "#605b7d",
+                        "tertiary": "#252728",
+                        "primary-fixed-dim": "#d3bbff",
+                        "on-primary-container": "#b994ff",
+                        "surface-container-highest": "#dce2f3",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#474363",
+                        "on-error": "#ffffff",
+                        "inverse-surface": "#2a313d",
+                        "primary-container": "#4c1d95",
+                        "on-primary-fixed": "#260059",
+                        "on-background": "#151c27",
+                        "surface-dim": "#d3daea",
+                        "secondary-container": "#dcd5fd",
+                        "outline": "#7b7483",
+                        "on-secondary": "#ffffff",
+                        "on-surface-variant": "#4a4452",
+                        "surface-container-high": "#e2e8f8",
+                        "on-primary-fixed-variant": "#572ba0",
+                        "error": "#ba1a1a",
+                        "on-surface": "#151c27"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-md": "1rem",
+                        "gutter": "1.5rem",
+                        "container-padding": "2rem",
+                        "stack-sm": "0.5rem",
+                        "sidebar-width": "260px",
+                        "stack-lg": "2rem"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "mono-num": ["Inter"],
+                        "headline-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "mono-num": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #340075;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #340075;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen flex">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full w-[260px] flex flex-col z-50 bg-primary border-r border-outline-variant shadow-sm hidden md:flex">
+<!-- Header -->
+<div class="p-gutter border-b border-white/10 flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-white/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-primary" data-icon="account_balance">account_balance</span>
+</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-bold text-on-primary">FiscalPro</h1>
+<p class="font-label-md text-label-md text-on-primary/70">Enterprise Insight</p>
+</div>
+</div>
+<!-- Main Tabs -->
+<div class="flex-1 py-stack-md overflow-y-auto">
+<ul class="space-y-1">
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-md text-label-md">Pelanggan</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="font-label-md text-label-md">Faktur</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-label-md text-label-md">Tagihan</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-label-md text-label-md">Pengeluaran</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 border-l-4 border-secondary-fixed text-secondary-fixed font-bold opacity-90 scale-[0.99] transition-transform bg-on-primary/5" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-md text-label-md">Profil</span>
+</a>
+</li>
+</ul>
+</div>
+<!-- Footer / CTA -->
+<div class="p-gutter border-t border-white/10">
+<button class="w-full bg-secondary-fixed text-on-secondary-fixed font-label-md text-label-md py-2 px-4 rounded hover:bg-primary-fixed transition-colors flex items-center justify-center gap-2 mb-4 shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                Add Faktur
+            </button>
+<ul>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">User Settings</span>
+</a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 md:ml-[260px] flex flex-col min-h-screen">
+<!-- TopAppBar (Simplified for this context as per prompt "Page title... with horizontal tabs") -->
+<header class="bg-surface/80 backdrop-blur-md sticky top-0 z-40 px-container-padding pt-6 border-b border-outline-variant shadow-sm">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h2 class="font-headline-md text-headline-md text-primary font-bold">Pengaturan Akun</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Kelola konfigurasi sistem, integrasi, dan preferensi aplikasi.</p>
+</div>
+<!-- Profile / Actions -->
+<div class="flex items-center gap-4 hidden sm:flex">
+<button class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-bold text-lg overflow-hidden border border-outline-variant">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="A small circular avatar placeholder image showing a subtle gradient of deep purple and light gray, reflecting a professional finance app aesthetic. Minimalist and clean." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDy4l_2Dj67maAFnQc1lSBvGKVIhwfogTfZIoGXDiwv8FJzA_SwIWjPInKbQ_83hk60exyFL7pp_msNUYVG4wk7MqhKzib6QUDaXsrFofPD2JrPDUt0dHS1ObLExAcv2o8igj2GaiuZgmNre6uJUg9ka9BzxekAknWVX0j2EUbPm1zPhF2TQcTAPYg03TTKgDQ77Ku7wsjTYdt9sXpnKjV2Iq4KzQo0GI0L1BeiHW3gRhV7xWAYkXnr-BreXrjJJNqzEvYmMu2Kwc_G"/>
+</div>
+</div>
+</div>
+<!-- Horizontal Tabs -->
+<nav class="flex gap-8 border-outline-variant">
+<a class="pb-3 px-1 font-label-md text-label-md text-on-surface-variant font-medium hover:text-primary transition-colors" href="#">Profil Saya</a>
+<a class="pb-3 px-1 font-label-md text-label-md text-on-surface-variant font-medium hover:text-primary transition-colors" href="#">Keamanan</a>
+<a class="pb-3 px-1 font-label-md text-label-md text-primary font-bold border-b-2 border-primary" href="#">Pengaturan Aplikasi</a>
+</nav>
+</header>
+<!-- Main Scrollable Content -->
+<main class="flex-1 p-container-padding bg-surface-container-low overflow-y-auto pb-[100px]">
+<div class="max-w-4xl mx-auto space-y-stack-lg">
+<!-- Card 1: WhatsApp Gateway -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05)] p-gutter">
+<div class="flex items-center gap-3 mb-6 pb-4 border-b border-surface-variant">
+<span class="material-symbols-outlined text-primary" data-icon="forum">forum</span>
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface">Konfigurasi WhatsApp Gateway</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Toggles -->
+<div class="space-y-4">
+<div class="flex items-center justify-between p-3 rounded bg-surface-bright border border-surface-variant">
+<div>
+<p class="font-body-md text-body-md font-medium text-on-surface">Aktifkan Pengingat Tagihan Otomatis</p>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">Kirim H-3 sebelum jatuh tempo.</p>
+</div>
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 z-10 top-0 left-0" id="toggle1" name="toggle1" style="border-color:#340075; transform: translateX(100%);" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-primary cursor-pointer transition-colors duration-300" for="toggle1"></label>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 rounded bg-surface-bright border border-surface-variant">
+<div>
+<p class="font-body-md text-body-md font-medium text-on-surface">Notifikasi Pembayaran Lunas</p>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">Kirim otomatis saat lunas.</p>
+</div>
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 border-outline-variant appearance-none cursor-pointer transition-all duration-300 z-10 top-0 left-0" id="toggle2" name="toggle2" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-outline-variant cursor-pointer transition-colors duration-300" for="toggle2"></label>
+</div>
+</div>
+</div>
+<!-- Inputs -->
+<div class="space-y-4">
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">WhatsApp API URL</label>
+<input class="w-full rounded border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md px-3 py-2 bg-surface text-on-surface placeholder-on-surface-variant/50 transition-colors shadow-sm" type="url" value="https://api.wa-gateway.local/v1/send"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">API Token/Key</label>
+<input class="w-full rounded border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md px-3 py-2 bg-surface text-on-surface placeholder-on-surface-variant/50 transition-colors shadow-sm" type="password" value="************************"/>
+</div>
+<div class="pt-2">
+<button class="px-4 py-2 border border-outline-variant rounded font-label-md text-label-md text-primary font-medium hover:bg-surface-variant transition-colors shadow-sm w-full md:w-auto">Test Connection</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Card 2: Network Integration -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05)] p-gutter">
+<div class="flex items-center gap-3 mb-6 pb-4 border-b border-surface-variant">
+<span class="material-symbols-outlined text-primary" data-icon="router">router</span>
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface">Integrasi Jaringan &amp; GenieACS</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div class="space-y-4">
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">GenieACS Server URL</label>
+<input class="w-full rounded border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md px-3 py-2 bg-surface text-on-surface placeholder-on-surface-variant/50 transition-colors shadow-sm" placeholder="http://192.168.1.100:7557" type="url"/>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Username</label>
+<input class="w-full rounded border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md px-3 py-2 bg-surface text-on-surface transition-colors shadow-sm" placeholder="admin" type="text"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Password</label>
+<input class="w-full rounded border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md px-3 py-2 bg-surface text-on-surface transition-colors shadow-sm" placeholder="••••••••" type="password"/>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex items-start justify-between p-4 rounded bg-surface-bright border border-surface-variant mt-0 md:mt-6">
+<div>
+<p class="font-body-md text-body-md font-medium text-on-surface">Izinkan Pelanggan Ganti Password Wi-Fi Mandiri</p>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1 leading-relaxed">Melalui portal pelanggan, merubah settingan CPE via TR-069.</p>
+</div>
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in shrink-0 mt-1">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 z-10 top-0 left-0" id="toggle3" name="toggle3" style="border-color:#340075; transform: translateX(100%);" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-primary cursor-pointer transition-colors duration-300" for="toggle3"></label>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Card 3: General Business -->
+<section class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05)] p-gutter">
+<div class="flex items-center gap-3 mb-6 pb-4 border-b border-surface-variant">
+<span class="material-symbols-outlined text-primary" data-icon="storefront">storefront</span>
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface">Pengaturan Umum Bisnis</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div class="space-y-4">
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Nama Perusahaan/RT-RW Net</label>
+<input class="w-full rounded border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md px-3 py-2 bg-surface text-on-surface transition-colors shadow-sm" type="text" value="NetWave Fiber"/>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Format Mata Uang</label>
+<select class="w-full rounded border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md px-3 py-2 bg-surface text-on-surface shadow-sm">
+<option value="IDR">IDR (Rupiah) - Rp</option>
+<option value="USD">USD (US Dollar) - $</option>
+</select>
+</div>
+</div>
+<div class="space-y-4">
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-1">Pesan Default Tagihan</label>
+<textarea class="w-full rounded border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md px-3 py-2 bg-surface text-on-surface resize-none shadow-sm" rows="4">Terima kasih telah menggunakan layanan NetWave Fiber. Harap melakukan pembayaran sebelum tanggal jatuh tempo untuk menghindari pemutusan layanan sementara.</textarea>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Action Bar (Sticky Bottom) -->
+<div class="sticky bottom-0 bg-surface-container-lowest border-t border-outline-variant p-4 z-30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+<div class="max-w-4xl mx-auto flex items-center justify-end gap-4">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Batal</a>
+<button class="bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md px-6 py-2.5 rounded shadow-sm transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="save">save</span>
+                    Simpan Pengaturan
+                </button>
+</div>
+</div>
+</div>
+<script>
+        // Simple toggle visual script fallback if CSS sibling selector has issues in specific frameworks
+        document.querySelectorAll('.toggle-checkbox').forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                if(this.checked) {
+                    this.style.transform = 'translateX(100%)';
+                    this.style.borderColor = '#340075';
+                    this.nextElementSibling.style.backgroundColor = '#340075';
+                } else {
+                    this.style.transform = 'translateX(0)';
+                    this.style.borderColor = '#ccc3d4'; // outline-variant
+                    this.nextElementSibling.style.backgroundColor = '#ccc3d4';
+                }
+            });
+        });
+    </script>
+</body></html>

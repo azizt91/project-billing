@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Dashboard Overview - FiscalPro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-surface": "#2a313d",
+                      "on-tertiary-fixed": "#191c1d",
+                      "background": "#f9f9ff",
+                      "error-container": "#ffdad6",
+                      "primary": "#340075",
+                      "on-tertiary-fixed-variant": "#454748",
+                      "on-primary": "#ffffff",
+                      "tertiary-container": "#3a3d3e",
+                      "primary-fixed-dim": "#d3bbff",
+                      "on-error-container": "#93000a",
+                      "on-error": "#ffffff",
+                      "on-secondary": "#ffffff",
+                      "tertiary-fixed-dim": "#c5c7c8",
+                      "on-background": "#151c27",
+                      "secondary": "#5f5a7c",
+                      "tertiary-fixed": "#e1e3e4",
+                      "on-tertiary-container": "#a6a7a8",
+                      "surface": "#f9f9ff",
+                      "inverse-primary": "#d3bbff",
+                      "secondary-fixed-dim": "#c8c2e9",
+                      "primary-container": "#4c1d95",
+                      "on-primary-fixed-variant": "#572ba0",
+                      "surface-container-high": "#e2e8f8",
+                      "primary-fixed": "#ebdcff",
+                      "on-secondary-fixed-variant": "#474363",
+                      "surface-dim": "#d3daea",
+                      "inverse-on-surface": "#ebf1ff",
+                      "secondary-container": "#dcd5fd",
+                      "secondary-fixed": "#e5deff",
+                      "surface-container-low": "#f0f3ff",
+                      "surface-variant": "#dce2f3",
+                      "on-primary-fixed": "#260059",
+                      "outline-variant": "#ccc3d4",
+                      "on-secondary-container": "#605b7d",
+                      "surface-container-lowest": "#ffffff",
+                      "tertiary": "#252728",
+                      "surface-bright": "#f9f9ff",
+                      "on-secondary-fixed": "#1b1735",
+                      "on-surface": "#151c27",
+                      "on-surface-variant": "#4a4452",
+                      "surface-container": "#e7eefe",
+                      "outline": "#7b7483",
+                      "on-tertiary": "#ffffff",
+                      "surface-container-highest": "#dce2f3",
+                      "on-primary-container": "#b994ff",
+                      "error": "#ba1a1a",
+                      "surface-tint": "#6f46b9"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "stack-md": "1rem",
+                      "sidebar-width": "260px",
+                      "container-padding": "2rem",
+                      "stack-lg": "2rem",
+                      "gutter": "1.5rem",
+                      "stack-sm": "0.5rem"
+              },
+              "fontFamily": {
+                      "headline-sm": [
+                              "Inter"
+                      ],
+                      "mono-num": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "mono-num": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "36px",
+                              {
+                                      "lineHeight": "44px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-surface h-full font-body-md overflow-hidden flex">
+<!-- SideNavBar -->
+<nav class="bg-primary dark:bg-primary-container text-on-primary dark:text-on-primary-container docked h-full w-[260px] left-0 top-0 border-r border-outline-variant shadow-sm fixed left-0 top-0 h-full w-[260px] flex flex-col z-50">
+<!-- Header -->
+<div class="px-6 py-8 flex flex-col gap-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface/20 flex items-center justify-center overflow-hidden">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary">FiscalPro</h1>
+<p class="font-label-md text-label-md text-on-primary/70">Enterprise Insight</p>
+</div>
+</div>
+<button class="mt-6 bg-secondary-fixed text-on-secondary-fixed font-label-md text-label-md font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-secondary-fixed-dim transition-colors">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                Add Faktur
+            </button>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 overflow-y-auto py-4 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-3 border-l-4 border-secondary-fixed text-secondary-fixed font-bold opacity-90 scale-[0.99] transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-md text-label-md">Pelanggan</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="font-label-md text-label-md">Faktur</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="font-label-md text-label-md">Tagihan</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-label-md text-label-md">Pengeluaran</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-md text-label-md">Profil</span>
+</a>
+</div>
+<!-- Footer -->
+<div class="p-4 border-t border-on-primary/10">
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">User Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="ml-[260px] flex-1 h-full flex flex-col overflow-y-auto bg-surface">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-background docked full-width top-0 ml-[260px] flex justify-between items-center px-gutter py-4 sticky top-0 z-40 bg-surface/80 backdrop-blur-md">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Hallo, AYUB</h2>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-primary dark:text-primary-fixed-dim hover:text-primary transition-colors hover:bg-surface-variant p-2 rounded-full transition-opacity duration-150">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-primary dark:text-primary-fixed-dim hover:text-primary transition-colors hover:bg-surface-variant p-2 rounded-full transition-opacity duration-150">
+<span class="material-symbols-outlined" data-icon="filter_list">filter_list</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden border border-outline-variant">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="A professional corporate headshot of a financial manager. The lighting is studio quality, soft and flattering. The background is a subtle blurred office environment emphasizing a clean, light-mode minimalist corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtzc3SdCAil5q6NShOESzQVcYRSmsTKISSn5tnQlVmeR9nH2YPNtOo4OdbtR27Sykx_KC8UX2noUe9aHZL8FKZzEWRQcm9MEkWsbZakhMzEumdBIeeAPuS8gWa9Iwq5dHKwzTydO1EWRkhqH3NE-RrDPjTq9vZDrx98mQe-rTiwgOVxnlXD3vLZOlGrslTr-D3NWWN8bDiNRihoDg1vBroD9xtWpa5Kva40vqFRWdslSXg5Qc7DlEngLdbSrilQggdYgqM38t6x7Ns"/>
+</div>
+</div>
+</header>
+<!-- Dashboard Content -->
+<div class="p-gutter flex-1 flex flex-col gap-stack-lg max-w-[1440px] mx-auto w-full">
+<!-- Page Header & Filters -->
+<div class="flex justify-between items-end">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Dashboard Overview</h2>
+</div>
+<div class="flex gap-3">
+<select class="bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-2 font-label-md text-label-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+<option>Januari</option>
+<option>Februari</option>
+<option>Maret</option>
+<option selected="">November</option>
+</select>
+<select class="bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-2 font-label-md text-label-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+<option>2022</option>
+<option selected="">2023</option>
+<option>2024</option>
+</select>
+</div>
+</div>
+<!-- Bento Grid: Metric Cards -->
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Main Profit Card (Spans 4 cols, 2 rows) -->
+<div class="col-span-12 md:col-span-4 row-span-2 bg-primary text-on-primary rounded-xl p-6 shadow-sm border border-primary-container flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -right-10 -top-10 w-40 h-40 bg-primary-container rounded-full opacity-50 blur-2xl"></div>
+<div>
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined opacity-80" data-icon="trending_up">trending_up</span>
+<h3 class="font-label-md text-label-md opacity-90 uppercase tracking-wider">Total Profit</h3>
+</div>
+<p class="font-display-lg text-display-lg font-bold mt-2">Rp 0</p>
+</div>
+<div class="mt-8 flex items-center justify-between">
+<span class="font-label-md text-label-md opacity-70">Bulan ini</span>
+<span class="bg-on-primary/20 text-on-primary font-mono-num text-mono-num px-2 py-1 rounded flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="arrow_upward">arrow_upward</span> 0.0%
+                         </span>
+</div>
+</div>
+<!-- Small Metric Cards (Span 2 cols each) -->
+<div class="col-span-6 md:col-span-2 bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-outline-variant flex flex-col justify-between">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Pendapatan</h3>
+<p class="font-headline-sm text-headline-sm font-bold text-on-surface mt-2 text-primary">Rp 0</p>
+</div>
+<div class="col-span-6 md:col-span-2 bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-outline-variant flex flex-col justify-between">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Pengeluaran</h3>
+<p class="font-headline-sm text-headline-sm font-bold text-on-surface mt-2 text-error">Rp 0</p>
+</div>
+<div class="col-span-6 md:col-span-2 bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-outline-variant flex flex-col justify-between">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Plgn Aktif</h3>
+<p class="font-headline-sm text-headline-sm font-bold text-on-surface mt-2">0</p>
+</div>
+<div class="col-span-6 md:col-span-2 bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-outline-variant flex flex-col justify-between">
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Plgn Nonaktif</h3>
+<p class="font-headline-sm text-headline-sm font-bold text-on-surface mt-2">0</p>
+</div>
+<!-- Second Row of Small Cards -->
+<div class="col-span-6 md:col-span-4 bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-outline-variant flex items-center justify-between">
+<div>
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Belum Dibayar</h3>
+<p class="font-headline-sm text-headline-sm font-bold text-on-surface mt-1">Rp 0</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-error-container/50 flex items-center justify-center text-on-error-container">
+<span class="material-symbols-outlined" data-icon="pending_actions">pending_actions</span>
+</div>
+</div>
+<div class="col-span-6 md:col-span-4 bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-outline-variant flex items-center justify-between">
+<div>
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Lunas Bulan Ini</h3>
+<p class="font-headline-sm text-headline-sm font-bold text-on-surface mt-1">Rp 0</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-secondary-container/50 flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined" data-icon="task_alt">task_alt</span>
+</div>
+</div>
+</div>
+<!-- Charts Grid -->
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Chart 1: Line Chart -->
+<div class="col-span-12 md:col-span-8 bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant flex flex-col">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-6">Pendapatan &amp; Profit</h3>
+<div class="flex-1 min-h-[250px] relative border-l border-b border-outline-variant/50">
+<!-- Simulated Line Chart -->
+<div class="absolute bottom-0 left-0 w-full h-[2px] bg-primary/20"></div>
+<div class="absolute bottom-[25%] left-0 w-full h-[1px] bg-outline-variant/30 border-dashed border-t"></div>
+<div class="absolute bottom-[50%] left-0 w-full h-[1px] bg-outline-variant/30 border-dashed border-t"></div>
+<div class="absolute bottom-[75%] left-0 w-full h-[1px] bg-outline-variant/30 border-dashed border-t"></div>
+<!-- Data Line (SVG placeholder for styling representation) -->
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<!-- Gradient Area -->
+<defs>
+<lineargradient id="chartGrad" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#340075" stop-opacity="0.2"></stop>
+<stop offset="100%" stop-color="#340075" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<path d="M0,100 L0,80 Q10,70 20,85 T40,60 T60,75 T80,40 T100,50 L100,100 Z" fill="url(#chartGrad)"></path>
+<!-- Line -->
+<path d="M0,80 Q10,70 20,85 T40,60 T60,75 T80,40 T100,50" fill="none" stroke="#340075" stroke-linejoin="round" stroke-width="2"></path>
+</svg>
+<!-- X Axis Labels -->
+<div class="absolute -bottom-6 w-full flex justify-between font-label-md text-label-md text-on-surface-variant px-2">
+<span>Jan</span><span>Mar</span><span>May</span><span>Jul</span><span>Sep</span><span>Nov</span>
+</div>
+</div>
+</div>
+<!-- Chart 2: Donut Chart -->
+<div class="col-span-12 md:col-span-4 bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant flex flex-col items-center">
+<h3 class="font-headline-sm text-headline-sm text-on-surface w-full text-left mb-6">Status Pembayaran</h3>
+<div class="relative w-48 h-48 flex items-center justify-center">
+<!-- Simulated Donut Chart using SVG -->
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 36 36">
+<!-- Background Ring -->
+<path class="text-surface-variant" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4"></path>
+<!-- Segment 1 -->
+<path class="text-primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="60, 100" stroke-width="4"></path>
+<!-- Segment 2 -->
+<path class="text-error" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="20, 100" stroke-dashoffset="-60" stroke-width="4"></path>
+<!-- Segment 3 -->
+<path class="text-secondary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="20, 100" stroke-dashoffset="-80" stroke-width="4"></path>
+</svg>
+<div class="absolute flex flex-col items-center">
+<span class="font-label-md text-label-md text-on-surface-variant">Total</span>
+<span class="font-headline-md text-headline-md font-bold text-on-surface">124</span>
+</div>
+</div>
+<div class="mt-6 w-full flex flex-col gap-2">
+<div class="flex items-center justify-between text-label-md font-label-md">
+<div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-primary"></div><span>Lunas</span></div>
+<span class="font-mono-num font-bold">60%</span>
+</div>
+<div class="flex items-center justify-between text-label-md font-label-md">
+<div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-error"></div><span>Menunggak</span></div>
+<span class="font-mono-num font-bold">20%</span>
+</div>
+<div class="flex items-center justify-between text-label-md font-label-md">
+<div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-secondary"></div><span>Belum Jatuh Tempo</span></div>
+<span class="font-mono-num font-bold">20%</span>
+</div>
+</div>
+</div>
+<!-- Chart 3 & 4: Growth Charts -->
+<div class="col-span-12 md:col-span-4 bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant flex flex-col">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-2">Pertumbuhan Pelanggan</h3>
+<p class="font-label-md text-label-md text-on-surface-variant mb-6">Net growth this month</p>
+<div class="flex-1 min-h-[150px] relative">
+<!-- Simplified Line -->
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<path d="M0,90 L20,80 L40,85 L60,50 L80,60 L100,20" fill="none" stroke="#6f46b9" stroke-linejoin="round" stroke-width="3"></path>
+</svg>
+</div>
+</div>
+<div class="col-span-12 md:col-span-4 bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant flex flex-col">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-2">Total Pelanggan Aktif</h3>
+<p class="font-label-md text-label-md text-on-surface-variant mb-6">Active subscriptions</p>
+<div class="flex-1 min-h-[150px] relative">
+<!-- Simplified Line -->
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<path d="M0,80 L20,75 L40,70 L60,40 L80,30 L100,10" fill="none" stroke="#5f5a7c" stroke-linejoin="round" stroke-width="3"></path>
+</svg>
+</div>
+</div>
+<!-- Side Panel: Activity Feed -->
+<div class="col-span-12 md:col-span-4 bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant flex flex-col h-[280px]">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Recent Activity</h3>
+<button class="text-primary hover:bg-surface-variant p-1 rounded transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="more_horiz">more_horiz</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto pr-2 space-y-4">
+<!-- Feed Item -->
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px]" data-icon="person_add">person_add</span>
+</div>
+<div>
+<p class="font-body-md text-body-md text-on-surface text-sm"><span class="font-bold">Budi Santoso</span> mendaftar langganan baru.</p>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">2 hours ago</p>
+</div>
+</div>
+<!-- Feed Item -->
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px]" data-icon="payments">payments</span>
+</div>
+<div>
+<p class="font-body-md text-body-md text-on-surface text-sm">Pembayaran diterima dari <span class="font-bold">PT Maju Jaya</span>.</p>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">5 hours ago</p>
+</div>
+</div>
+<!-- Feed Item -->
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-error-container text-on-error-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px]" data-icon="warning">warning</span>
+</div>
+<div>
+<p class="font-body-md text-body-md text-on-surface text-sm">Tagihan jatuh tempo untuk <span class="font-bold">CV. Abadi</span>.</p>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">1 day ago</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<footer class="mt-8 pt-4 border-t border-outline-variant text-center font-label-md text-label-md text-on-surface-variant pb-8">
+                © 2023 FiscalPro Enterprise. All rights reserved.
+            </footer>
+</div>
+</main>
+</body></html>

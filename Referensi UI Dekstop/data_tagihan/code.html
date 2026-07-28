@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+
+<html lang="id"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FiscalPro - Data Tagihan</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#6f46b9",
+                        "secondary-fixed": "#e5deff",
+                        "primary-fixed": "#ebdcff",
+                        "primary": "#340075",
+                        "surface-variant": "#dce2f3",
+                        "secondary": "#5f5a7c",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed": "#191c1d",
+                        "surface-container-highest": "#dce2f3",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed": "#1b1735",
+                        "primary-fixed-dim": "#d3bbff",
+                        "on-surface": "#151c27",
+                        "primary-container": "#4c1d95",
+                        "surface": "#f9f9ff",
+                        "surface-dim": "#d3daea",
+                        "outline-variant": "#ccc3d4",
+                        "on-surface-variant": "#4a4452",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#3a3d3e",
+                        "secondary-container": "#dcd5fd",
+                        "outline": "#7b7483",
+                        "tertiary-fixed-dim": "#c5c7c8",
+                        "on-primary-fixed": "#260059",
+                        "inverse-surface": "#2a313d",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed": "#e1e3e4",
+                        "background": "#f9f9ff",
+                        "on-tertiary-fixed-variant": "#454748",
+                        "on-secondary-fixed-variant": "#474363",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#d3bbff",
+                        "on-primary-container": "#b994ff",
+                        "surface-container-high": "#e2e8f8",
+                        "on-primary-fixed-variant": "#572ba0",
+                        "on-tertiary-container": "#a6a7a8",
+                        "on-tertiary": "#ffffff",
+                        "surface-bright": "#f9f9ff",
+                        "tertiary": "#252728",
+                        "surface-container": "#e7eefe",
+                        "inverse-on-surface": "#ebf1ff",
+                        "secondary-fixed-dim": "#c8c2e9",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-container": "#605b7d",
+                        "on-error-container": "#93000a",
+                        "on-background": "#151c27",
+                        "surface-container-low": "#f0f3ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-sm": "0.5rem",
+                        "stack-lg": "2rem",
+                        "gutter": "1.5rem",
+                        "stack-md": "1rem",
+                        "sidebar-width": "260px",
+                        "container-padding": "2rem"
+                    },
+                    "fontFamily": {
+                        "mono-num": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "mono-num": ["14px", { "lineHeight": "20px", "fontWeight": "600" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface h-screen w-full flex overflow-hidden">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full w-[260px] flex flex-col z-50 bg-primary text-on-primary border-r border-outline-variant shadow-sm hidden md:flex">
+<!-- Header -->
+<div class="p-6 flex items-center gap-3 border-b border-primary-container">
+<img alt="Finance App Logo" class="w-8 h-8 rounded" data-alt="A stylized geometric logo representing financial growth and stability. The logo uses deep purples and crisp whites, embodying a modern, professional, and secure SaaS aesthetic. It is simple, flat, and instantly recognizable." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1tWcYIo22ofIp-ufeRlRJgPFGnwmWdld7Eq1ySIVzjwdTf4Ofo2W2wHtFXC3z9hZwgIUtF-4-lDvSvXCIzjmjURxCKC_KJHavrygj3SongOfU90xwfuwHAFcM2YYiNPR6FnKrxvB7VrzPW6Y5u2q54S8gZgeDD_nrSylNVs0n0Ls_35sAgLsbY4Ni3qRwqPaMRBiv9RgrQaCudfUnJtDQ7CNngFEWunQEu2-MSKqzw2xEYjAdSb91cdveGGgmVPo3rImT8LSWI03q"/>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary">FiscalPro</h1>
+<p class="font-label-md text-label-md text-primary-fixed-dim">Enterprise Insight</p>
+</div>
+</div>
+<!-- Main Navigation -->
+<div class="flex-1 py-6 overflow-y-auto space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md text-label-md">Pelanggan</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-label-md text-label-md">Faktur</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 border-l-4 border-secondary-fixed text-secondary-fixed font-bold bg-on-primary/5" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-md text-label-md">Tagihan</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="font-label-md text-label-md">Pengeluaran</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-md text-label-md">Profil</span>
+</a>
+</div>
+<!-- CTA & Footer -->
+<div class="p-6 border-t border-primary-container space-y-4">
+<button class="w-full bg-secondary-fixed text-on-secondary-fixed font-label-md text-label-md py-2.5 rounded-lg font-bold hover:bg-primary-fixed transition-colors">
+                Add Faktur
+            </button>
+<a class="flex items-center gap-3 px-4 py-3 text-on-primary/70 font-medium hover:bg-on-primary/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">User Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="ml-[260px] flex-1 flex flex-col h-full bg-surface">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-gutter py-4 sticky top-0 z-40 bg-surface/80 backdrop-blur-md">
+<div class="flex items-center gap-4">
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Data Tagihan</h2>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden lg:block w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-body-md font-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="Search..." type="text"/>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors duration-150 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors duration-150">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant cursor-pointer ml-2">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a corporate financial manager in a modern, brightly lit office setting. The individual looks confident and composed. Soft, natural light illuminates their face, emphasizing a clean, contemporary SaaS aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyBEF6ypxPUTJJhk_rOC_jMk0DZCjUSZQIwyDZwdNypgcsis20Q5SwZwdMXncvaEhfhGBHfp0ija0i0Dz_DSteEfAhBCGGOIWulJbLuSRSofRI_y8hwtoqZHDN3BbOAcKAQNt5q8jVn0M6_sljJMRhCvsXAFX9W8GcLAk2fx6uRW4F_og4gC0vr9BemVocTHnwYySyzTa-brfffOxSpJTCnRZ0pxbR6Is0MbcSXOnCMVSjmoQcxIaiS7Gv0TWTjM8T12BXqJ8opO8a"/>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 overflow-y-auto px-container-padding py-stack-lg">
+<!-- Page Header & Tabs -->
+<div class="mb-stack-lg border-b border-outline-variant">
+<h1 class="font-display-lg text-display-lg text-on-surface mb-stack-md">Data Tagihan</h1>
+<div class="flex gap-8">
+<button class="pb-3 border-b-2 border-primary text-primary font-label-md text-label-md font-bold px-1">
+                        Belum Dibayar
+                    </button>
+<button class="pb-3 border-b-2 border-transparent text-on-surface-variant hover:text-primary font-label-md text-label-md font-medium px-1 transition-colors">
+                        Cicilan
+                    </button>
+<button class="pb-3 border-b-2 border-transparent text-on-surface-variant hover:text-primary font-label-md text-label-md font-medium px-1 transition-colors">
+                        Dibayar
+                    </button>
+</div>
+</div>
+<!-- Toolbar -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-stack-md mb-stack-lg">
+<div class="relative w-full sm:w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-md font-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all shadow-sm" placeholder="Cari tagihan..." type="text"/>
+</div>
+<div class="flex items-center gap-3 w-full sm:w-auto">
+<button class="px-4 py-2.5 border border-outline-variant text-primary font-label-md text-label-md font-semibold rounded-lg hover:bg-surface-container-low transition-colors whitespace-nowrap flex-1 sm:flex-none text-center bg-surface-container-lowest">
+                        Kirim WA Massal
+                    </button>
+<button class="px-4 py-2.5 bg-primary text-on-primary font-label-md text-label-md font-semibold rounded-lg hover:bg-primary-container transition-colors whitespace-nowrap flex-1 sm:flex-none text-center shadow-sm">
+                        + Buat Tagihan
+                    </button>
+</div>
+</div>
+<!-- Data Table Card -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant">
+<th class="py-4 px-6 w-12">
+<input class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+</th>
+<th class="py-4 px-6 font-label-md text-label-md text-on-surface-variant">Nama Pelanggan</th>
+<th class="py-4 px-6 font-label-md text-label-md text-on-surface-variant">Periode</th>
+<th class="py-4 px-6 font-label-md text-label-md text-on-surface-variant text-right">Aksi</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="py-4 px-6">
+<input class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+</td>
+<td class="py-4 px-6">
+<div class="font-body-md text-body-md text-on-surface font-medium">Rayhan Saputra</div>
+<div class="font-body-md text-body-md text-on-surface-variant text-xs mt-0.5">INV-2026-07-001</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-tertiary-container/10 text-tertiary-container border border-tertiary-container/20">
+                                        Juli 2026
+                                    </span>
+</td>
+<td class="py-4 px-6">
+<div class="flex justify-end items-center gap-2">
+<button class="w-8 h-8 rounded flex items-center justify-center bg-green-50 text-green-600 hover:bg-green-100 transition-colors border border-green-200" title="Kirim WA">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"></path></svg>
+</button>
+<button class="px-3 py-1.5 bg-surface text-primary border border-primary-fixed-dim rounded font-label-md text-label-md font-semibold hover:bg-surface-container-low transition-colors">
+                                            Detail
+                                        </button>
+<button class="px-3 py-1.5 bg-primary text-on-primary rounded font-label-md text-label-md font-semibold hover:bg-primary-container transition-colors shadow-sm">
+                                            LUNAS
+                                        </button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="py-4 px-6">
+<input class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+</td>
+<td class="py-4 px-6">
+<div class="font-body-md text-body-md text-on-surface font-medium">Budi Santoso</div>
+<div class="font-body-md text-body-md text-on-surface-variant text-xs mt-0.5">INV-2026-07-002</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-tertiary-container/10 text-tertiary-container border border-tertiary-container/20">
+                                        Juli 2026
+                                    </span>
+</td>
+<td class="py-4 px-6">
+<div class="flex justify-end items-center gap-2">
+<button class="w-8 h-8 rounded flex items-center justify-center bg-green-50 text-green-600 hover:bg-green-100 transition-colors border border-green-200" title="Kirim WA">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"></path></svg>
+</button>
+<button class="px-3 py-1.5 bg-surface text-primary border border-primary-fixed-dim rounded font-label-md text-label-md font-semibold hover:bg-surface-container-low transition-colors">
+                                            Detail
+                                        </button>
+<button class="px-3 py-1.5 bg-primary text-on-primary rounded font-label-md text-label-md font-semibold hover:bg-primary-container transition-colors shadow-sm">
+                                            LUNAS
+                                        </button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="py-4 px-6">
+<input class="rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+</td>
+<td class="py-4 px-6">
+<div class="font-body-md text-body-md text-on-surface font-medium">Siti Aminah</div>
+<div class="font-body-md text-body-md text-on-surface-variant text-xs mt-0.5">INV-2026-07-003</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-tertiary-container/10 text-tertiary-container border border-tertiary-container/20">
+                                        Juli 2026
+                                    </span>
+</td>
+<td class="py-4 px-6">
+<div class="flex justify-end items-center gap-2">
+<button class="w-8 h-8 rounded flex items-center justify-center bg-green-50 text-green-600 hover:bg-green-100 transition-colors border border-green-200" title="Kirim WA">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"></path></svg>
+</button>
+<button class="px-3 py-1.5 bg-surface text-primary border border-primary-fixed-dim rounded font-label-md text-label-md font-semibold hover:bg-surface-container-low transition-colors">
+                                            Detail
+                                        </button>
+<button class="px-3 py-1.5 bg-primary text-on-primary rounded font-label-md text-label-md font-semibold hover:bg-primary-container transition-colors shadow-sm">
+                                            LUNAS
+                                        </button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="px-6 py-4 border-t border-outline-variant flex items-center justify-between bg-surface-container-low">
+<span class="font-body-md text-body-md text-on-surface-variant">Menampilkan 1-3 dari 45 tagihan</span>
+<div class="flex gap-1">
+<button class="p-1 rounded text-on-surface-variant hover:bg-outline-variant/30 transition-colors disabled:opacity-50">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded flex items-center justify-center font-label-md text-label-md bg-primary text-on-primary font-bold">1</button>
+<button class="w-8 h-8 rounded flex items-center justify-center font-label-md text-label-md text-on-surface-variant hover:bg-outline-variant/30 transition-colors">2</button>
+<button class="w-8 h-8 rounded flex items-center justify-center font-label-md text-label-md text-on-surface-variant hover:bg-outline-variant/30 transition-colors">3</button>
+<span class="w-8 h-8 flex items-center justify-center text-on-surface-variant">...</span>
+<button class="p-1 rounded text-on-surface-variant hover:bg-outline-variant/30 transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
