@@ -341,8 +341,8 @@ export function getWhatsAppNumber() {
 export function getOfflinePaymentInfo() {
     const settings = getAppSettings();
     return {
-        name: settings?.offline_payment_name || 'Bapak Karsadi dan Ibu Sopiyah',
-        address: settings?.offline_payment_address || 'Dukuh Sekiyong RT 04/RW 07, Desa Pamutih'
+        name: settings?.offline_payment_name || '',
+        address: settings?.offline_payment_address || ''
     };
 }
 

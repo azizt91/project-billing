@@ -631,7 +631,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!error && data && data.setting_value) {
                     textareaTemplate.value = data.setting_value;
                 } else {
-                    textareaTemplate.value = `Informasi Tagihan WiFi Anda\n\nHai Bapak/Ibu {nama_pelanggan},\nID Pelanggan: {idpl}\n\nInformasi tagihan Bapak/Ibu bulan ini adalah:\nJumlah Tagihan: {total_tagihan}\nPeriode Tagihan: {periode}\n\nBayar tagihan Anda di salah satu rekening di bawah ini:\n- Seabank 901307925714 An. TAUFIQ AZIZ\n- BCA 3621053653 An. TAUFIQ AZIZ\n- BSI 7211806138 An. TAUFIQ AZIZ\n- Dana 089609497390 An. TAUFIQ AZIZ\n\nTerima kasih atas kepercayaan Anda menggunakan layanan kami.\n_____________________________\n*Ini adalah pesan otomatis. Jika telah membayar tagihan, abaikan pesan ini.`;
+                    const payText = await fetchActivePaymentMethodsText();
+                    textareaTemplate.value = `Informasi Tagihan WiFi Anda\n\nHai Bapak/Ibu {nama_pelanggan},\nID Pelanggan: {idpl}\n\nInformasi tagihan Bapak/Ibu bulan ini adalah:\nJumlah Tagihan: {total_tagihan}\nPeriode Tagihan: {periode}\n\nMetode Pembayaran:\n${payText}\n\nTerima kasih atas kepercayaan Anda menggunakan layanan kami.\n_____________________________\n*Ini adalah pesan otomatis. Jika telah membayar tagihan, abaikan pesan ini.`;
                 }
             } catch (e) {
                 console.error(e);
@@ -1207,8 +1208,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function fetchActivePaymentMethodsText() {
+        try {
+            const { data: methods } = await supabase
+                .from('payment_methods')
+                .select('bank_name, account_number, account_holder')
+                .eq('is_active', true)
+                .order('sort_order', { ascending: true });
+            
+            if (methods && methods.length > 0) {
+                return methods.map(m => `- ${m.bank_name} ${m.account_number} a.n. ${m.account_holder}`).join('\n');
+            }
+        } catch (e) {
+            console.error('Error fetching payment_methods:', e);
+        }
+        return 'Silakan cek metode pembayaran yang tersedia di aplikasi.';
+    }
+
     async function sendWhatsAppMessage(rowData) {
-        let customTemplate = `Informasi Tagihan WiFi Anda\n\nHai Bapak/Ibu {nama_pelanggan},\nID Pelanggan: {idpl}\n\nInformasi tagihan Bapak/Ibu bulan ini adalah:\nJumlah Tagihan: {total_tagihan}\nPeriode Tagihan: {periode}\n\nBayar tagihan Anda di salah satu rekening di bawah ini:\n- Seabank 901307925714 An. TAUFIQ AZIZ\n- BCA 3621053653 An. TAUFIQ AZIZ\n- BSI 7211806138 An. TAUFIQ AZIZ\n- Dana 089609497390 An. TAUFIQ AZIZ\n\nTerima kasih atas kepercayaan Anda menggunakan layanan kami.\n_____________________________\n*Ini adalah pesan otomatis. Jika telah membayar tagihan, abaikan pesan ini.`;
+        const payText = await fetchActivePaymentMethodsText();
+        let customTemplate = `Informasi Tagihan WiFi Anda\n\nHai Bapak/Ibu {nama_pelanggan},\nID Pelanggan: {idpl}\n\nInformasi tagihan Bapak/Ibu bulan ini adalah:\nJumlah Tagihan: {total_tagihan}\nPeriode Tagihan: {periode}\n\nMetode Pembayaran:\n${payText}\n\nTerima kasih atas kepercayaan Anda menggunakan layanan kami.\n_____________________________\n*Ini adalah pesan otomatis. Jika telah membayar tagihan, abaikan pesan ini.`;
         let appUrl = 'http://ai-net-billing.netlify.app/';
         let customerEmail = '-';
         try {

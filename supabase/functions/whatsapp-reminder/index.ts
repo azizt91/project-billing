@@ -78,6 +78,20 @@ serve(async (req) => {
     let successCount = 0;
     let failureCount = 0;
 
+    // Fetch active payment methods
+    const { data: payMethods } = await supabaseClient
+      .from('payment_methods')
+      .select('bank_name, account_number, account_holder')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+
+    let payMethodsText = '';
+    if (payMethods && payMethods.length > 0) {
+      payMethodsText = payMethods.map((m: any) => `• ${m.bank_name}: ${m.account_number} (an. ${m.account_holder})`).join('\n');
+    } else {
+      payMethodsText = '• Silakan cek metode pembayaran yang tersedia pada aplikasi.';
+    }
+
     for (const user of usersToNotify) {
       const price = packagesMap.get(user.package_id);
 
@@ -87,7 +101,7 @@ serve(async (req) => {
       }
 
       // Membuat isi pesan sesuai template
-      const message = `*Informasi Tagihan WiFi Anda*\n\nHai Bapak/Ibu ${user.full_name},\nID Pelanggan: ${user.idpl || '-'}\n\nTagihan Anda untuk periode *${currentMonthYear}* sebesar *Rp${new Intl.NumberFormat('id-ID').format(price)}* telah jatuh tempo.\n\n*PEMBAYARAN LEBIH MUDAH DENGAN QRIS!*\nScan kode QR di gambar pesan ini menggunakan aplikasi m-banking atau e-wallet Anda (DANA, GoPay, OVO, dll). Pastikan nominal transfer sesuai tagihan.\n\nUntuk pembayaran via QRIS, silakan lihat gambar pada link berikut:\nhttps://bayardong.online/sneat/assets/img/qris.jpeg\n\nAtau transfer manual ke rekening berikut:\n• Seabank: 901307925714\n• BCA: 3621053653\n• BSI: 7211806138\n(an. TAUFIQ AZIZ)\n\nTerima kasih atas kepercayaan Anda.\n_____________________________\n*_Pesan ini dibuat otomatis. Abaikan jika sudah membayar._`;
+      const message = `*Informasi Tagihan WiFi Anda*\n\nHai Bapak/Ibu ${user.full_name},\nID Pelanggan: ${user.idpl || '-'}\n\nTagihan Anda untuk periode *${currentMonthYear}* sebesar *Rp${new Intl.NumberFormat('id-ID').format(price)}* telah jatuh tempo.\n\n*METODE PEMBAYARAN:*\n${payMethodsText}\n\nTerima kasih atas kepercayaan Anda.\n_____________________________\n*_Pesan ini dibuat otomatis. Abaikan jika sudah membayar._`;
 
       // Panggil fungsi 'send-whatsapp-notification' yang sudah ada
       try {
