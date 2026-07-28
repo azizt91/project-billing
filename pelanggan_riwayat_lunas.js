@@ -663,6 +663,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 Saya sudah melakukan pembayaran. Mohon untuk diverifikasi. Terima kasih.`;
 
         const whatsappNumber = getWhatsAppNumber(); // Get from app settings
+        if (!whatsappNumber) {
+            alert('Nomor WhatsApp Admin belum diatur. Silakan hubungi pihak pengelola/admin.');
+            return;
+        }
         const encodedMessage = encodeURIComponent(message);
         const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 

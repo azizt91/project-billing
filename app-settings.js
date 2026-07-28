@@ -208,7 +208,7 @@ export default class AppSettings {
             favicon_url: 'assets/logo_192x192.png',
             icon_192_url: 'assets/logo_192x192.png',
             icon_512_url: 'assets/logo_512x512.png',
-            whatsapp_number: '6281914170701',
+            whatsapp_number: '',
             support_email: 'support@yourisp.com',
             office_address: '',
             offline_payment_name: '',

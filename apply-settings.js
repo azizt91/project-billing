@@ -335,7 +335,7 @@ export function getAppSettings() {
 
 export function getWhatsAppNumber() {
     const settings = getAppSettings();
-    return settings?.whatsapp_number || '6281914170701';
+    return settings?.whatsapp_number || '';
 }
 
 export function getOfflinePaymentInfo() {
