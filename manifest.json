@@ -1,6 +1,6 @@
 {
-  "name": "Your App Name",
-  "short_name": "Your App Name",
+  "name": "REVAM NET",
+  "short_name": "REVAM NET",
   "description": "Sistem manajemen pelanggan ISP dengan integrasi Google Sheets",
   "start_url": "/",
   "display": "standalone",

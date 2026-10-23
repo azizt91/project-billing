@@ -334,7 +334,7 @@ async function handlePaymentConfirmation() {
     const customerName = currentProfile ? currentProfile.full_name : currentUser.email;
     const customerIdpl = currentProfile ? currentProfile.idpl : 'N/A';
 
-    const appName = getAppSettings()?.app_name || 'Your App Name';
+    const appName = getAppSettings()?.app_name || 'REVAM NET';
     const message = `Halo Admin ${appName}, saya ingin mengkonfirmasi pembayaran tagihan:
 
 - *Nama:* ${customerName}

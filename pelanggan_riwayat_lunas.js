@@ -2,6 +2,7 @@
 import { supabase } from './supabase-client.js';
 import { checkAuth, requireRole } from './auth.js';
 import { getWhatsAppNumber, getQRISInfo, getAppSettings } from './apply-settings.js';
+import { receiptPrinter } from './receipt-printer.js';
 
 let currentUser = null;
 let currentProfile = null;
@@ -158,6 +159,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (backFromDetailBtn) {
             backFromDetailBtn.addEventListener('click', () => {
                 switchView('list');
+            });
+        }
+
+        // Print receipt button from customer detail view
+        const customerPrintReceiptBtn = document.getElementById('btn-customer-print-receipt');
+        if (customerPrintReceiptBtn) {
+            customerPrintReceiptBtn.addEventListener('click', () => {
+                if (currentDetailData) {
+                    receiptPrinter.openReceipt(currentDetailData);
+                }
             });
         }
 
@@ -652,7 +663,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const customerName = currentProfile ? currentProfile.full_name : currentUser.email;
         const customerIdpl = currentProfile ? currentProfile.idpl : 'N/A';
 
-        const appName = getAppSettings()?.app_name || 'Your App Name';
+        const appName = getAppSettings()?.app_name || 'REVAM NET';
         const message = `Halo Admin ${appName}, saya ingin mengkonfirmasi pembayaran tagihan:
 
 - *Nama:* ${customerName}

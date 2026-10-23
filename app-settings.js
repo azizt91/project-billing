@@ -200,11 +200,11 @@ export default class AppSettings {
 
     getDefaultSettings() {
         return {
-            app_name: 'Your App Name',
-            app_short_name: 'Your App Name',
+            app_name: 'REVAM NET',
+            app_short_name: 'REVAM NET',
             app_description: 'Sistem manajemen pelanggan ISP',
             app_tagline: 'Kelola pelanggan dengan mudah',
-            logo_url: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'><circle cx='64' cy='64' r='64' fill='%23667eea'/><text x='50%' y='45%' text-anchor='middle' fill='white' font-size='13' font-weight='800' font-family='sans-serif'>YOUR</text><text x='50%' y='65%' text-anchor='middle' fill='white' font-size='13' font-weight='800' font-family='sans-serif'>LOGO</text></svg>",
+            logo_url: 'assets/logo_rivamnet.jpg',
             favicon_url: 'assets/logo_192x192.png',
             icon_192_url: 'assets/logo_192x192.png',
             icon_512_url: 'assets/logo_512x512.png',
@@ -455,7 +455,7 @@ export default class AppSettings {
 
     applySettings(settings) {
         // Update title
-        const appName = settings.app_name || 'Your App Name';
+        const appName = settings.app_name || 'REVAM NET';
         document.title = `Pengaturan Aplikasi - ${appName}`;
 
         // Update favicon

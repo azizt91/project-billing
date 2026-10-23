@@ -1,5 +1,6 @@
 import { supabase } from './supabase-client.js';
 import { getCurrentAdminName, showNotificationResult, sendCustomerPaymentNotification } from './whatsapp-notification.js'; // Pastikan `sendCustomerPaymentNotification` ada di sini
+import { receiptPrinter } from './receipt-printer.js';
 
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -209,6 +210,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (backFromDetailBtn) {
             backFromDetailBtn.addEventListener('click', () => {
                 switchView('list');
+            });
+        }
+
+        // Print receipt button from detail view
+        const detailPrintReceiptBtn = document.getElementById('btn-detail-print-receipt');
+        if (detailPrintReceiptBtn) {
+            detailPrintReceiptBtn.addEventListener('click', () => {
+                if (currentDetailData) {
+                    receiptPrinter.openReceipt(currentDetailData);
+                }
             });
         }
 
@@ -977,6 +988,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p class="text-green-600 text-sm font-bold leading-normal">LUNAS</p>
                 <p class="text-gray-500 text-xs font-medium leading-normal">${item.payment_method || 'Tidak diketahui'}</p>
             </div>
+            <button class="print-receipt-btn flex items-center justify-center w-7 h-7 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" data-invoice-id="${invoiceId}" title="Cetak Struk Pembayaran">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18px" height="18px" fill="currentColor" viewBox="0 0 256 256">
+                    <path d="M216,80H184V40a16,16,0,0,0-16-16H88A16,16,0,0,0,72,40V80H40A24,24,0,0,0,16,104v80a24,24,0,0,0,24,24H72v24a16,16,0,0,0,16,16h80a16,16,0,0,0,16-16V208h32a24,24,0,0,0,24-24V104A24,24,0,0,0,216,80ZM88,40h80V80H88ZM168,232H88V184h80Zm48-48a8,8,0,0,1-8,8H184V176a8,8,0,0,0-8-8H80a8,8,0,0,0-8,8v16H40a8,8,0,0,1-8-8V104a8,8,0,0,1,8-8H216a8,8,0,0,1,8,8ZM184,124a12,12,0,1,1-12-12A12,12,0,0,1,184,124Z"></path>
+                </svg>
+            </button>
             <button class="revert-paid-btn flex items-center justify-center w-7 h-7 text-orange-500 hover:bg-orange-50 rounded-lg transition-colors" data-invoice-id="${invoiceId}" title="Batalkan Pembayaran">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18px" height="18px" fill="currentColor" viewBox="0 0 256 256">
                     <path d="M224,128a96,96,0,0,1-94.71,96H128A95.38,95.38,0,0,1,62.1,197.8a8,8,0,0,1,11-11.63A80,80,0,1,0,71.43,71.39a3.07,3.07,0,0,1-.26.25L60.63,81.29l17,17A8,8,0,0,1,72,112H24a8,8,0,0,1-8-8V56A8,8,0,0,1,29.66,50.3L49.31,70,59.78,59.43a96,96,0,0,1,164.2,68.5A8,8,0,0,1,224,128Z"></path>
@@ -1013,6 +1029,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (button.classList.contains('mark-paid-btn')) {
                 markAsPaid(targetItem);
+            } else if (button.classList.contains('print-receipt-btn')) {
+                receiptPrinter.openReceipt(targetItem);
             } else if (button.classList.contains('whatsapp-btn')) {
                 sendWhatsAppMessage(targetItem);
             } else if (button.classList.contains('installment-btn')) {
@@ -1815,6 +1833,20 @@ document.addEventListener('DOMContentLoaded', () => {
             hidePaymentLoading();
             modal.remove();
             showSuccessNotification(data.message);
+
+            // Tampilkan popup cetak struk otomatis
+            try {
+                const { data: freshPaidInvoice } = await supabase
+                    .from('invoices')
+                    .select('*, profiles(*)')
+                    .eq('id', invoiceData.invoiceId)
+                    .single();
+                if (freshPaidInvoice) {
+                    receiptPrinter.openReceipt(freshPaidInvoice);
+                }
+            } catch (receiptErr) {
+                console.warn('Gagal memuat invoice untuk struk:', receiptErr);
+            }
 
             // Send WhatsApp notification untuk pembayaran lunas
             try {

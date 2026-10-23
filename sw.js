@@ -1,5 +1,5 @@
 // Service Worker untuk PWA AI.NET
-const CACHE_NAME = 'yourisp-v1.5.2';
+const CACHE_NAME = 'yourisp-v1.5.3';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -124,7 +124,7 @@ self.addEventListener('push', (event) => {
     };
 
     event.waitUntil(
-      self.registration.showNotification('Your App Name', options)
+      self.registration.showNotification('REVAM NET', options)
     );
   }
 });

@@ -58,7 +58,7 @@ class ApplySettings {
 
     applyAllSettings(settings) {
         const safeSettings = settings || {};
-        const appName = safeSettings.app_name || 'Your App Name';
+        const appName = safeSettings.app_name || 'REVAM NET';
 
         // Apply to document head & meta tags
         this.applyTitle(appName);
@@ -77,13 +77,13 @@ class ApplySettings {
     }
 
     applyTitle(appName) {
-        const name = appName || 'Your App Name';
+        const name = appName || 'REVAM NET';
         const currentPage = this.getCurrentPageName();
         document.title = currentPage ? `${currentPage} - ${name}` : name;
     }
 
     applyAppleMobileTitle(appName) {
-        const name = appName || 'Your App Name';
+        const name = appName || 'REVAM NET';
         let appleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
         if (appleMeta) {
             appleMeta.setAttribute('content', name);
@@ -96,7 +96,7 @@ class ApplySettings {
     }
 
     applyPWAIcons(settings) {
-        const cb = '?v=2';
+        const cb = '?v=3';
         const icon512 = (settings?.icon_512_url || 'assets/logo_512x512.png') + (settings?.icon_512_url ? '' : cb);
         const icon192 = (settings?.icon_192_url || 'assets/logo_192x192.png') + (settings?.icon_192_url ? '' : cb);
 
@@ -158,7 +158,7 @@ class ApplySettings {
     }
 
     applyManifest(settings) {
-        const appName = settings?.app_name || 'Your App Name';
+        const appName = settings?.app_name || 'REVAM NET';
         const appShortName = settings?.app_short_name || appName;
         const appDesc = settings?.app_description || 'Sistem Manajemen Billing & Pelanggan';
 
@@ -205,9 +205,9 @@ class ApplySettings {
     }
 
     applyToLoginPage(settings) {
-        const appName = settings?.app_name || 'Your App Name';
-        const defaultLogo = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'><circle cx='64' cy='64' r='64' fill='%23667eea'/><text x='50%' y='45%' text-anchor='middle' fill='white' font-size='13' font-weight='800' font-family='sans-serif'>YOUR</text><text x='50%' y='65%' text-anchor='middle' fill='white' font-size='13' font-weight='800' font-family='sans-serif'>LOGO</text></svg>";
-        const isOldDefaultLogo = !settings?.logo_url || settings.logo_url === 'assets/sn-blue.png';
+        const appName = settings?.app_name || 'REVAM NET';
+        const defaultLogo = "assets/logo_rivamnet.jpg";
+        const isOldDefaultLogo = !settings?.logo_url || settings.logo_url === 'assets/sn-blue.png' || settings.logo_url.startsWith('data:image/svg+xml');
         const logoUrl = isOldDefaultLogo ? defaultLogo : settings.logo_url;
 
         // Login page (index.html / login.html)
@@ -216,7 +216,7 @@ class ApplySettings {
 
         if (loginLogo) {
             loginLogo.src = logoUrl;
-            loginLogo.alt = 'Your Logo';
+            loginLogo.alt = appName;
         }
         if (loginAppName) {
             loginAppName.textContent = appName;

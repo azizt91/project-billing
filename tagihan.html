@@ -4,13 +4,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tagihan - Your App Name</title>
+  <title>Tagihan - REVAM NET</title>
 
   <!-- PWA Meta Tags -->
   <meta name="theme-color" content="#f9f8fb">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Your App Name">
+  <meta name="apple-mobile-web-app-title" content="REVAM NET">
   <meta name="description" content="Manajemen tagihan ISP">
 
   <!-- PWA Icons -->
@@ -284,6 +284,17 @@
             </div>
           </div>
         </div>
+
+        <!-- Print Receipt Button in Detail View -->
+        <div class="px-4 pb-8">
+          <button id="btn-detail-print-receipt"
+            class="w-full flex items-center justify-center gap-2 bg-[#5324e0] hover:bg-purple-700 active:scale-[0.99] text-white font-bold py-3.5 px-4 rounded-xl shadow-md shadow-purple-200 transition-all cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" fill="currentColor" viewBox="0 0 256 256">
+              <path d="M216,80H184V40a16,16,0,0,0-16-16H88A16,16,0,0,0,72,40V80H40A24,24,0,0,0,16,104v80a24,24,0,0,0,24,24H72v24a16,16,0,0,0,16,16h80a16,16,0,0,0,16-16V208h32a24,24,0,0,0,24-24V104A24,24,0,0,0,216,80ZM88,40h80V80H88ZM168,232H88V184h80Zm48-48a8,8,0,0,1-8,8H184V176a8,8,0,0,0-8-8H80a8,8,0,0,0-8,8v16H40a8,8,0,0,1-8-8V104a8,8,0,0,1,8-8H216a8,8,0,0,1,8,8ZM184,124a12,12,0,1,1-12-12A12,12,0,0,1,184,124Z"></path>
+            </svg>
+            <span>Cetak Struk Pembayaran</span>
+          </button>
+        </div>
       </div>
 
     </div>
@@ -547,7 +558,8 @@
   <script src="supabase-client.js" type="module"></script>
   <script src="apply-settings.js" type="module"></script>
   <script src="whatsapp-notification.js" type="module"></script>
-  <script src="tagihan.js?v=1.0.4" type="module"></script>
+  <script src="receipt-printer.js" type="module"></script>
+  <script src="tagihan.js?v=1.0.5" type="module"></script>
 
   <style>
     /* Tab Styles */

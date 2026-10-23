@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function createTransferMessage(customerName, idpl) {
-        const appName = getAppSettings()?.app_name || 'Your App Name';
+        const appName = getAppSettings()?.app_name || 'REVAM NET';
         const now = new Date();
         const currentDate = now.toLocaleDateString('id-ID', {
             day: 'numeric',
@@ -173,7 +173,7 @@ _Pesan otomatis dari aplikasi ${appName}_`;
     }
 
     function createLocationRequestMessage(customerName, idpl) {
-        const appName = getAppSettings()?.app_name || 'Your App Name';
+        const appName = getAppSettings()?.app_name || 'REVAM NET';
         return `📍 *PERMINTAAN ALAMAT LENGKAP*
 
 Halo Admin ${appName},
