@@ -137,18 +137,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         const photoUrl = data.photo_url;
         const defaultGenderAvatar = (data.gender || '').toUpperCase() === 'PEREMPUAN' ? 'assets/avatar_female.svg' : 'assets/avatar_male.svg';
-        if (photoUrl && (photoUrl.startsWith('data:') || photoUrl.startsWith('assets/') || (photoUrl.startsWith('http') && !photoUrl.includes('sb-admin-pro.startbootstrap.com')))) {
-            profileAvatar.style.backgroundImage = `url("${photoUrl}")`;
-            profileAvatar.innerHTML = '';
-        } else if (photoUrl && photoUrl.includes('sb-admin-pro.startbootstrap.com')) {
-            profileAvatar.style.backgroundImage = `url("${defaultGenderAvatar}")`;
-            profileAvatar.innerHTML = '';
-        } else {
-            const initials = (data.full_name || 'P').charAt(0).toUpperCase();
-            profileAvatar.style.backgroundImage = `none`;
-            profileAvatar.style.backgroundColor = '#6a5acd';
-            profileAvatar.innerHTML = `<span class="text-white text-4xl font-bold">${initials}</span>`;
-        }
+        const validPhoto = (photoUrl && !photoUrl.includes('sb-admin-pro.startbootstrap.com'))
+            ? photoUrl
+            : defaultGenderAvatar;
+
+        profileAvatar.style.backgroundColor = 'transparent';
+        profileAvatar.style.backgroundImage = 'none';
+        profileAvatar.innerHTML = `<img src="${validPhoto}" alt="Avatar" class="w-full h-full object-cover rounded-full" onerror="this.onerror=null; this.src='${defaultGenderAvatar}';">`;
     }
 
     // --- Populate edit form with data ---
@@ -223,9 +218,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         customerName.textContent = '';
         customerEmail.className = 'h-5 bg-gray-200 rounded animate-pulse w-32';
         customerEmail.textContent = '';
-        profileAvatar.style.backgroundColor = '#e0e0e0';
         profileAvatar.classList.add('animate-pulse');
-        profileAvatar.innerHTML = '';
     }
 
     function hideSkeletonLoading() {

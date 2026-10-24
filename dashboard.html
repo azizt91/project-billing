@@ -298,7 +298,9 @@
         <header class="header-gradient header-sticky shadow-lg rounded-b-3xl">
           <div class="flex items-center justify-between px-4 py-6">
             <div class="flex items-center gap-4">
-              <div id="user-avatar" class="w-12 h-12 rounded-full bg-cover bg-center bg-white/30 shadow-inner"></div>
+              <div id="user-avatar" class="w-12 h-12 rounded-full overflow-hidden bg-white/20 shadow-inner flex items-center justify-center shrink-0">
+                <img id="user-avatar-img" src="assets/avatar_male.svg" alt="Avatar" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='assets/avatar_male.svg';">
+              </div>
               <div>
                 <h2 id="user-greeting" class="text-white text-xl font-bold leading-tight">Memuat...</h2>
                 <p id="user-email" class="text-white/80 text-xs">...</p>
@@ -480,7 +482,7 @@
     <script type="module" src="apply-settings.js"></script>
     <script type="module" src="auth.js"></script>
     <script src="datetime-display.js"></script>
-    <script type="module" src="dashboard.js"></script>
+    <script type="module" src="dashboard.js?v=4"></script>
     <script src="pwa-installer.js"></script>
 </body>
 </html>

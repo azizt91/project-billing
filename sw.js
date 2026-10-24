@@ -1,5 +1,5 @@
 // Service Worker untuk PWA AI.NET
-const CACHE_NAME = 'yourisp-v1.5.3';
+const CACHE_NAME = 'yourisp-v1.5.5';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -26,6 +26,10 @@ const urlsToCache = [
   '/pelanggan_info.js',
   '/profile.js',
   '/assets/yourisp.png',
+  '/assets/avatar_male.svg',
+  '/assets/avatar_female.svg',
+  '/assets/default_avatar.svg',
+  '/assets/login_illustration.svg',
   '/manifest.json',
   'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css'

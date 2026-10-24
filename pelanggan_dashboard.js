@@ -74,17 +74,12 @@ function displayHeader(profile) {
     if (customerEmail) customerEmail.textContent = currentUser.email;
 
     if (userAvatar) {
-        if (profile.photo_url) {
-            const avatarUrl = profile.photo_url.includes('sb-admin-pro.startbootstrap.com')
-                ? (profile.gender === 'PEREMPUAN' ? 'assets/avatar_female.svg' : 'assets/avatar_male.svg')
-                : profile.photo_url;
-            userAvatar.style.backgroundImage = `url('${avatarUrl}')`;
-            userAvatar.innerHTML = '';
-        } else {
-            const initials = (profile.full_name || 'P').charAt(0).toUpperCase();
-            userAvatar.innerHTML = `<span class="text-white text-xl font-bold flex items-center justify-center h-full">${initials}</span>`;
-            userAvatar.style.backgroundColor = 'rgba(255,255,255,0.3)';
-        }
+        const defaultAvatar = (profile.gender === 'PEREMPUAN') ? 'assets/avatar_female.svg' : 'assets/avatar_male.svg';
+        const avatarUrl = (profile.photo_url && !profile.photo_url.includes('sb-admin-pro.startbootstrap.com'))
+            ? profile.photo_url
+            : defaultAvatar;
+        userAvatar.style.backgroundImage = 'none';
+        userAvatar.innerHTML = `<img id="user-avatar-img" src="${avatarUrl}" alt="Avatar" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='${defaultAvatar}';">`;
     }
 }
 

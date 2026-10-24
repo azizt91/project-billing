@@ -42,17 +42,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 userGreeting.textContent = `Hallo, ${profile.full_name || 'Admin'}`;
                 
                 // Set the avatar image
-                if (profile.photo_url && userAvatar) {
-                    const avatarUrl = profile.photo_url.includes('sb-admin-pro.startbootstrap.com')
-                        ? 'assets/avatar_male.svg'
-                        : profile.photo_url;
-                    userAvatar.style.backgroundImage = `url('${avatarUrl}')`;
-                    userAvatar.innerHTML = '';
-                } else if (userAvatar) {
-                    // Optional: Fallback to initials if no photo
-                    const initials = (profile.full_name || 'A').charAt(0).toUpperCase();
-                    userAvatar.innerHTML = `<span class="text-white text-xl font-bold flex items-center justify-center h-full">${initials}</span>`;
-                    userAvatar.style.backgroundColor = 'rgba(255,255,255,0.3)';
+                if (userAvatar) {
+                    const avatarUrl = (profile && profile.photo_url && !profile.photo_url.includes('sb-admin-pro.startbootstrap.com'))
+                        ? profile.photo_url
+                        : 'assets/avatar_male.svg';
+                    userAvatar.style.backgroundImage = 'none';
+                    userAvatar.innerHTML = `<img id="user-avatar-img" src="${avatarUrl}" alt="Avatar" class="w-full h-full object-cover" onerror="this.onerror=null; this.src='assets/avatar_male.svg';">`;
                 }
             } else {
                 userGreeting.textContent = `Hallo, Admin`;

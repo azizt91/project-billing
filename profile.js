@@ -74,36 +74,81 @@ document.addEventListener('DOMContentLoaded', async () => {
      * Handles the file selection and upload process for the avatar.
      * @param {Event} event - The file input change event.
      */
+    function compressImageFile(file, maxDimension = 300) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > h) {
+                        if (w > maxDimension) {
+                            h = Math.round((h * maxDimension) / w);
+                            w = maxDimension;
+                        }
+                    } else {
+                        if (h > maxDimension) {
+                            w = Math.round((w * maxDimension) / h);
+                            h = maxDimension;
+                        }
+                    }
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', 0.85));
+                };
+                img.onerror = reject;
+                img.src = e.target.result;
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    /**
+     * Handles the file selection and upload process for the avatar.
+     * @param {Event} event - The file input change event.
+     */
     async function handlePhotoUpload(event) {
         const file = event.target.files[0];
         if (!file || !currentUser) return;
 
-        alert('Mengunggah foto...'); // Notifikasi loading sederhana
-
         try {
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${currentUser.id}-${Date.now()}.${fileExt}`;
-            const filePath = `${fileName}`;
+            let finalPhotoUrl = null;
 
-            // 1. Upload file to Supabase Storage
-            let { error: uploadError } = await supabase.storage
-                .from('avatars') // Pastikan nama bucket ini benar
-                .upload(filePath, file, {
-                    cacheControl: '3600',
-                    upsert: true // Overwrite existing file
-                });
-            if (uploadError) throw uploadError;
+            // 1. Coba upload ke Supabase Storage (bucket avatars)
+            try {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${currentUser.id}-${Date.now()}.${fileExt}`;
+                const { error: uploadError } = await supabase.storage
+                    .from('avatars')
+                    .upload(fileName, file, {
+                        cacheControl: '3600',
+                        upsert: true
+                    });
 
-            // 2. Get the public URL for the uploaded file
-            const { data } = supabase.storage
-                .from('avatars')
-                .getPublicUrl(filePath);
-            if (!data.publicUrl) throw new Error("Tidak bisa mendapatkan URL publik.");
-            
+                if (!uploadError) {
+                    const { data } = supabase.storage
+                        .from('avatars')
+                        .getPublicUrl(fileName);
+                    if (data?.publicUrl) finalPhotoUrl = data.publicUrl;
+                }
+            } catch (storageErr) {
+                console.warn('Storage upload error, fallback to compressed image:', storageErr);
+            }
+
+            // 2. Fallback kompresi langsung (data URL) jika storage bucket belum aktif
+            if (!finalPhotoUrl) {
+                finalPhotoUrl = await compressImageFile(file, 256);
+            }
+
             // 3. Update the photo_url in the profiles table
             const { error: updateError } = await supabase
                 .from('profiles')
-                .update({ photo_url: data.publicUrl })
+                .update({ photo_url: finalPhotoUrl })
                 .eq('id', currentUser.id);
             if (updateError) throw updateError;
 
@@ -161,7 +206,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (Object.keys(authUpdateData).length > 0) {
                 const { data: { user }, error: authError } = await supabase.auth.updateUser(authUpdateData);
                 if (authError) {
-                    // Jika gagal, kembalikan data profil yang gagal diupdate
                     await supabase.from('profiles').update({ full_name: currentAdminData.full_name }).eq('id', currentUser.id);
                     throw new Error(`Gagal memperbarui email/password: ${authError.message}`);
                 }
@@ -192,18 +236,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         adminEmail.textContent = currentUser?.email || 'email@example.com';
         
         const photoUrl = data.photo_url;
-        if (photoUrl && (photoUrl.startsWith('data:') || photoUrl.startsWith('assets/') || (photoUrl.startsWith('http') && !photoUrl.includes('sb-admin-pro.startbootstrap.com')))) {
-            profileAvatar.style.backgroundImage = `url("${photoUrl}")`;
-            profileAvatar.innerHTML = ''; 
-        } else if (photoUrl && photoUrl.includes('sb-admin-pro.startbootstrap.com')) {
-            profileAvatar.style.backgroundImage = `url("assets/avatar_male.svg")`;
-            profileAvatar.innerHTML = '';
-        } else {
-            const initials = (data.full_name || 'A').charAt(0).toUpperCase();
-            profileAvatar.style.backgroundImage = `none`;
-            profileAvatar.style.backgroundColor = '#6a5acd';
-            profileAvatar.innerHTML = `<span class="text-white text-4xl font-bold">${initials}</span>`;
-        }
+        const validPhoto = (photoUrl && !photoUrl.includes('sb-admin-pro.startbootstrap.com'))
+            ? photoUrl 
+            : 'assets/avatar_male.svg';
+
+        profileAvatar.style.backgroundColor = 'transparent';
+        profileAvatar.style.backgroundImage = 'none';
+        profileAvatar.innerHTML = `<img src="${validPhoto}" alt="Avatar" class="w-full h-full object-cover rounded-full" onerror="this.onerror=null; this.src='assets/avatar_male.svg';">`;
     }
 
     function populateEditMode(data) {
@@ -217,9 +256,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         adminName.textContent = '';
         adminEmail.className = 'h-5 bg-gray-200 rounded animate-pulse w-32';
         adminEmail.textContent = '';
-        profileAvatar.style.backgroundColor = '#e0e0e0';
         profileAvatar.classList.add('animate-pulse');
-        profileAvatar.innerHTML = '';
     }
 
     function hideSkeletonLoading() {
