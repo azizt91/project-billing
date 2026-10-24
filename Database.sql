@@ -1,91 +1,311 @@
---
--- PostgreSQL database dump
---
+-- ==============================================================================
+-- PROJECT BILLING / REVAM NET - MASTER DATABASE SETUP SCRIPT
+-- ==============================================================================
+-- File ini dirancang untuk dijalankan 1 KALI (All-in-One / Idempotent) di Supabase SQL Editor.
+-- Mencakup:
+-- 1. Ekstensi Postgres
+-- 2. Custom ENUM Types
+-- 3. Seluruh Tabel Aplikasi & Relasinya
+-- 4. Indeks Performa
+-- 5. Stored Functions & RPC Lengkap
+-- 6. Trigger Otomatis (Auto Profile on Signup, Updated_at)
+-- 7. Supabase Storage Bucket ('avatars') & Storage Policies
+-- 8. Data Default / Initial Seed (App Settings, WA Templates, GenieACS, Paket)
+-- 9. Row Level Security (RLS) & Policies Menyeluruh
+-- 10. Hak Akses (Grants) untuk anon, authenticated, service_role
+-- ==============================================================================
 
--- Dumped from database version 17.6
--- Dumped by pg_dump version 17.6 (Ubuntu 17.6-2.pgdg24.04+1)
+-- ------------------------------------------------------------------------------
+-- 1. EKSTENSI POSTGRES
+-- ------------------------------------------------------------------------------
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET transaction_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
---
--- Name: public; Type: SCHEMA; Schema: -; Owner: pg_database_owner
---
-
---
--- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: pg_database_owner
---
-
-COMMENT ON SCHEMA public IS 'standard public schema';
-
-
---
--- Name: customer_status; Type: TYPE; Schema: public; Owner: postgres
---
-
-CREATE TYPE public.customer_status AS ENUM (
-    'AKTIF',
-    'NONAKTIF'
-);
-
-
-ALTER TYPE public.customer_status OWNER TO postgres;
-
---
--- Name: invoice_payment_status; Type: TYPE; Schema: public; Owner: postgres
---
-
-CREATE TYPE public.invoice_payment_status AS ENUM (
-    'unpaid',
-    'partially_paid',
-    'paid',
-    'overdue'
-);
-
-
-ALTER TYPE public.invoice_payment_status OWNER TO postgres;
-
---
--- Name: invoice_status; Type: TYPE; Schema: public; Owner: postgres
---
-
-CREATE TYPE public.invoice_status AS ENUM (
-    'unpaid',
-    'paid',
-    'partially_paid',
-    'overdue'
-);
-
-
-ALTER TYPE public.invoice_status OWNER TO postgres;
-
---
--- Name: add_payment_notification(text, text, text, numeric, text); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.add_payment_notification(customer_name text, customer_idpl text, invoice_period text, amount numeric, admin_name text) RETURNS uuid
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    notification_id uuid;
-    formatted_amount text;
+-- ------------------------------------------------------------------------------
+-- 2. CUSTOM ENUM TYPES (Idempotent)
+-- ------------------------------------------------------------------------------
+DO $$ 
 BEGIN
-    -- Format amount ke Rupiah
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'customer_status') THEN
+        CREATE TYPE public.customer_status AS ENUM ('AKTIF', 'NONAKTIF');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'invoice_status') THEN
+        CREATE TYPE public.invoice_status AS ENUM ('unpaid', 'paid', 'partially_paid', 'overdue');
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'invoice_payment_status') THEN
+        CREATE TYPE public.invoice_payment_status AS ENUM ('unpaid', 'partially_paid', 'paid', 'overdue');
+    END IF;
+END $$;
+
+-- ------------------------------------------------------------------------------
+-- 3. TABEL-TABEL UTAMA
+-- ------------------------------------------------------------------------------
+
+-- 3.1. Tabel Paket Internet (packages)
+CREATE TABLE IF NOT EXISTS public.packages (
+    id SERIAL PRIMARY KEY,
+    package_name TEXT NOT NULL,
+    price NUMERIC NOT NULL,
+    speed_mbps INTEGER,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3.2. Tabel Profil Pengguna & Pelanggan (profiles)
+CREATE TABLE IF NOT EXISTS public.profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    idpl TEXT UNIQUE,
+    full_name TEXT,
+    address TEXT,
+    gender TEXT,
+    whatsapp_number TEXT,
+    role TEXT NOT NULL DEFAULT 'USER',
+    photo_url TEXT,
+    status public.customer_status DEFAULT 'AKTIF',
+    installation_date DATE,
+    device_type TEXT,
+    ip_static_pppoe TEXT,
+    package_id INTEGER REFERENCES public.packages(id) ON DELETE SET NULL,
+    churn_date DATE,
+    latitude NUMERIC,
+    longitude NUMERIC,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3.3. Tabel Tagihan (invoices)
+CREATE TABLE IF NOT EXISTS public.invoices (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    customer_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    package_id INTEGER REFERENCES public.packages(id) ON DELETE SET NULL,
+    invoice_period TEXT NOT NULL,
+    amount NUMERIC NOT NULL,
+    total_due NUMERIC,
+    amount_paid NUMERIC DEFAULT 0,
+    status public.invoice_status NOT NULL DEFAULT 'unpaid',
+    due_date DATE,
+    paid_at TIMESTAMPTZ,
+    last_payment_date TIMESTAMPTZ,
+    payment_method TEXT DEFAULT 'cash',
+    broadcast_count INTEGER DEFAULT 0,
+    payment_history JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3.4. Tabel Pengeluaran Operasional (expenses)
+CREATE TABLE IF NOT EXISTS public.expenses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    description TEXT NOT NULL,
+    amount NUMERIC NOT NULL,
+    expense_date DATE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3.5. Tabel Notifikasi (notifications)
+CREATE TABLE IF NOT EXISTS public.notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    recipient_role TEXT,
+    recipient_user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    url TEXT,
+    type TEXT,
+    data JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3.6. Tabel Status Baca Notifikasi (notification_reads)
+CREATE TABLE IF NOT EXISTS public.notification_reads (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    notification_id UUID NOT NULL REFERENCES public.notifications(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    read_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT uq_notification_user UNIQUE (notification_id, user_id)
+);
+
+-- 3.7. Tabel Metode Pembayaran (payment_methods)
+CREATE TABLE IF NOT EXISTS public.payment_methods (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    bank_name TEXT NOT NULL,
+    account_number TEXT NOT NULL,
+    account_holder TEXT NOT NULL,
+    sort_order INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3.8. Tabel Pengaturan Aplikasi (app_settings)
+CREATE TABLE IF NOT EXISTS public.app_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    app_name TEXT,
+    app_short_name TEXT,
+    app_description TEXT,
+    app_tagline TEXT,
+    logo_url TEXT,
+    favicon_url TEXT,
+    icon_192_url TEXT,
+    icon_512_url TEXT,
+    whatsapp_number TEXT,
+    support_email TEXT,
+    office_address TEXT,
+    offline_payment_name TEXT,
+    offline_payment_address TEXT,
+    qris_image_url TEXT,
+    show_qris BOOLEAN DEFAULT TRUE,
+    theme_color TEXT,
+    background_color TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3.9. Tabel Pengaturan WhatsApp & Template (whatsapp_settings)
+CREATE TABLE IF NOT EXISTS public.whatsapp_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    setting_key TEXT UNIQUE NOT NULL,
+    setting_value TEXT,
+    is_enabled BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3.10. Tabel Pengaturan GenieACS (genieacs_settings)
+CREATE TABLE IF NOT EXISTS public.genieacs_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    setting_key TEXT UNIQUE NOT NULL,
+    setting_value TEXT,
+    is_enabled BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3.11. Tabel Log Perubahan WiFi (wifi_change_logs)
+CREATE TABLE IF NOT EXISTS public.wifi_change_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    customer_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    ip_address TEXT NOT NULL,
+    old_ssid TEXT,
+    new_ssid TEXT,
+    changed_at TIMESTAMPTZ DEFAULT NOW(),
+    status TEXT DEFAULT 'pending',
+    error_message TEXT
+);
+
+-- ------------------------------------------------------------------------------
+-- 4. INDEKS UNTUK OPTIMASI PERFORMA
+-- ------------------------------------------------------------------------------
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
+CREATE INDEX IF NOT EXISTS idx_profiles_idpl ON public.profiles(idpl);
+CREATE INDEX IF NOT EXISTS idx_profiles_status ON public.profiles(status);
+CREATE INDEX IF NOT EXISTS idx_profiles_package_id ON public.profiles(package_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_customer_id ON public.invoices(customer_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON public.invoices(status);
+CREATE INDEX IF NOT EXISTS idx_invoices_period ON public.invoices(invoice_period);
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON public.notifications(recipient_role, recipient_user_id);
+CREATE INDEX IF NOT EXISTS idx_notification_reads_user ON public.notification_reads(user_id);
+CREATE INDEX IF NOT EXISTS idx_wifi_change_logs_customer ON public.wifi_change_logs(customer_id);
+
+-- ------------------------------------------------------------------------------
+-- 5. FUNGSI & PROSEDUR (STORED FUNCTIONS & RPC)
+-- ------------------------------------------------------------------------------
+
+-- 5.1. Update updated_at column helper
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION public.update_whatsapp_settings_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION public.update_genieacs_settings_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 5.2. Get User Role (SECURITY DEFINER)
+CREATE OR REPLACE FUNCTION public.get_user_role(user_id UUID)
+RETURNS TEXT
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+DECLARE
+    user_role TEXT;
+BEGIN
+    SELECT role INTO user_role FROM public.profiles WHERE id = user_id;
+    RETURN COALESCE(user_role, 'USER');
+END;
+$$;
+
+-- 5.3. Get User Email from auth.users (SECURITY DEFINER)
+CREATE OR REPLACE FUNCTION public.get_user_email(user_id UUID)
+RETURNS TEXT
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+DECLARE
+    user_email TEXT;
+BEGIN
+    SELECT email INTO user_email FROM auth.users WHERE id = user_id;
+    RETURN COALESCE(user_email, '');
+END;
+$$;
+
+-- 5.4. Auto Handle New User Signup (Trigger Function)
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.profiles (
+        id,
+        full_name,
+        role,
+        status,
+        photo_url
+    )
+    VALUES (
+        NEW.id,
+        COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
+        COALESCE(NEW.raw_user_meta_data->>'role', 'ADMIN'),
+        'AKTIF',
+        'assets/avatar_male.svg'
+    )
+    ON CONFLICT (id) DO UPDATE SET
+        full_name = EXCLUDED.full_name,
+        role = EXCLUDED.role;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 5.5. Tambah Notifikasi Pembayaran (add_payment_notification)
+CREATE OR REPLACE FUNCTION public.add_payment_notification(
+    customer_name TEXT,
+    customer_idpl TEXT,
+    invoice_period TEXT,
+    amount NUMERIC,
+    admin_name TEXT
+) RETURNS UUID
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+DECLARE
+    notification_id UUID;
+    formatted_amount TEXT;
+BEGIN
     formatted_amount := 'Rp ' || to_char(amount, 'FM999,999,999');
 
-    -- Insert notifikasi untuk semua ADMIN (ikon lonceng sudah dihapus dari judul)
     INSERT INTO public.notifications (title, body, recipient_role, url)
     VALUES (
-        'Pembayaran Lunas Diterima', -- <--- Ikon lonceng dihapus dari sini
+        'Pembayaran Lunas Diterima',
         'Dari ' || customer_name || ' (' || customer_idpl || ') sebesar ' || formatted_amount || ' untuk periode ' || invoice_period || '. Diproses oleh ' || admin_name || '.',
         'ADMIN',
         '/tagihan.html?status=paid'
@@ -96,190 +316,56 @@ BEGIN
 END;
 $$;
 
-
-ALTER FUNCTION public.add_payment_notification(customer_name text, customer_idpl text, invoice_period text, amount numeric, admin_name text) OWNER TO postgres;
-
---
--- Name: broadcast_to_all_admins(text, text, text, jsonb, text); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.broadcast_to_all_admins(notification_type text, title text, message text, data jsonb DEFAULT '{}'::jsonb, url text DEFAULT NULL::text) RETURNS text
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
+-- 5.6. Broadcast ke Semua Admin (broadcast_to_all_admins)
+CREATE OR REPLACE FUNCTION public.broadcast_to_all_admins(
+    notification_type TEXT,
+    title TEXT,
+    message TEXT,
+    data JSONB DEFAULT '{}'::jsonb,
+    url TEXT DEFAULT NULL
+) RETURNS TEXT
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
 DECLARE
-    notification_id TEXT;
+    admin_record RECORD;
+    admin_count INTEGER := 0;
 BEGIN
-    -- Generate unique notification ID
-    notification_id := gen_random_uuid()::TEXT;
+    INSERT INTO public.notifications (title, body, recipient_role, url, type, data)
+    VALUES (title, message, 'ADMIN', url, notification_type, data);
 
-    -- Insert notification untuk semua admin menggunakan struktur lama
-    INSERT INTO public.notifications (
-        id,
-        title,
-        body,
-        recipient_role,
-        recipient_user_id,
-        url,
-        type,
-        data,
-        created_at
-    ) VALUES (
-        notification_id::UUID,
-        title,
-        message,
-        'ADMIN',  -- Kirim ke semua admin
-        NULL,     -- Tidak spesifik user
-        url,
-        notification_type,
-        data,
-        NOW()
-    );
+    FOR admin_record IN 
+        SELECT id FROM public.profiles WHERE role = 'ADMIN'
+    LOOP
+        admin_count := admin_count + 1;
+    END LOOP;
 
-    RETURN notification_id;
+    RETURN 'Notification sent to ' || admin_count || ' admins';
 END;
 $$;
 
-
-ALTER FUNCTION public.broadcast_to_all_admins(notification_type text, title text, message text, data jsonb, url text) OWNER TO postgres;
-
---
--- Name: cleanup_old_notifications(integer); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.cleanup_old_notifications(days_to_keep integer DEFAULT 30) RETURNS integer
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
+-- 5.7. Cleanup Notifikasi Lama (cleanup_old_notifications)
+CREATE OR REPLACE FUNCTION public.cleanup_old_notifications(days_to_keep INTEGER DEFAULT 30)
+RETURNS INTEGER
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
 DECLARE
     deleted_count INTEGER;
 BEGIN
-    -- Hanya admin yang bisa menjalankan cleanup
-    IF NOT EXISTS (
-        SELECT 1 FROM public.profiles
-        WHERE id = auth.uid() AND role = 'ADMIN'
-    ) THEN
-        RAISE EXCEPTION 'Access denied: Only admins can cleanup notifications';
-    END IF;
-
-    WITH deleted AS (
-        DELETE FROM public.notifications
-        WHERE created_at < NOW() - INTERVAL '1 day' * days_to_keep
-        RETURNING id
-    )
-    SELECT COUNT(*) INTO deleted_count FROM deleted;
-
+    DELETE FROM public.notifications
+    WHERE created_at < NOW() - (days_to_keep || ' days')::INTERVAL;
+    
+    GET DIAGNOSTICS deleted_count = ROW_COUNT;
     RETURN deleted_count;
 END;
 $$;
 
-
-ALTER FUNCTION public.cleanup_old_notifications(days_to_keep integer) OWNER TO postgres;
-
---
--- Name: create_monthly_invoices_v2(); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.create_monthly_invoices_v2() RETURNS jsonb
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    target_invoice_period TEXT;
-    created_invoices_count INTEGER := 0;
-    customer_record RECORD;
-    month_name TEXT;
-    current_date_jakarta DATE;
-BEGIN
-    -- 1. Mengambil tanggal saat ini dengan zona waktu Jakarta (WIB)
-    current_date_jakarta := (NOW() AT TIME ZONE 'Asia/Jakarta')::DATE;
-
-    -- 2. Mengambil nama bulan dalam bahasa Indonesia dari tanggal yang sudah disesuaikan
-    SELECT 
-        CASE EXTRACT(MONTH FROM current_date_jakarta)
-            WHEN 1 THEN 'Januari'
-            WHEN 2 THEN 'Februari'
-            WHEN 3 THEN 'Maret'
-            WHEN 4 THEN 'April'
-            WHEN 5 THEN 'Mei'
-            WHEN 6 THEN 'Juni'
-            WHEN 7 THEN 'Juli'
-            WHEN 8 THEN 'Agustus'
-            WHEN 9 THEN 'September'
-            WHEN 10 THEN 'Oktober'
-            WHEN 11 THEN 'November'
-            WHEN 12 THEN 'Desember'
-        END
-    INTO month_name;
-
-    -- 3. Membuat periode tagihan (contoh: 'Oktober 2025')
-    target_invoice_period := month_name || ' ' || EXTRACT(YEAR FROM current_date_jakarta);
-
-    -- 4. Loop melalui pelanggan yang memenuhi syarat
-    FOR customer_record IN 
-        SELECT 
-            prof.id as customer_id,
-            pack.price as customer_price, 
-            pack.id as customer_package_id
-        FROM 
-            public.profiles prof
-        JOIN 
-            public.packages pack ON prof.package_id = pack.id
-        WHERE 
-            prof.status = 'AKTIF' 
-            AND prof.role = 'USER'
-            AND prof.package_id IS NOT NULL
-            -- 5. Pengecekan yang lebih tangguh (case-insensitive dan trim spasi)
-            AND NOT EXISTS (
-                SELECT 1 FROM public.invoices inv 
-                WHERE inv.customer_id = prof.id AND LOWER(TRIM(inv.invoice_period)) = LOWER(TRIM(target_invoice_period))
-            )
-    LOOP
-        -- Membuat invoice baru
-        INSERT INTO public.invoices (
-            customer_id, 
-            package_id, 
-            invoice_period, 
-            amount, 
-            total_due, 
-            status, 
-            due_date
-        ) VALUES (
-            customer_record.customer_id,
-            customer_record.customer_package_id,
-            target_invoice_period,
-            customer_record.customer_price,
-            customer_record.customer_price,
-            'unpaid',
-            -- Jatuh tempo diatur tanggal 10 bulan berikutnya
-            (date_trunc('month', current_date_jakarta) + interval '1 month' + interval '9 days')::date 
-        );
-        created_invoices_count := created_invoices_count + 1;
-    END LOOP;
-
-    -- Mengembalikan pesan hasil
-    IF created_invoices_count > 0 THEN
-        RETURN jsonb_build_object(
-            'status', 'success',
-            'message', 'Berhasil membuat ' || created_invoices_count || ' tagihan baru untuk periode ' || target_invoice_period
-        );
-    ELSE
-        RETURN jsonb_build_object(
-            'status', 'info',
-            'message', 'Tidak ada tagihan baru yang dibuat. Semua pelanggan aktif sudah memiliki tagihan untuk periode ini.'
-        );
-    END IF;
-
-EXCEPTION
-    WHEN OTHERS THEN
-        RETURN jsonb_build_object('status', 'error', 'message', 'Error: ' || SQLERRM);
-END;
-$$;
-
---
--- Name: create_monthly_invoices_v3(integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.create_monthly_invoices_v3(p_month integer DEFAULT NULL, p_year integer DEFAULT NULL) RETURNS jsonb
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
+-- 5.8. Pembuatan Tagihan Bulanan Otomatis (create_monthly_invoices_v3)
+CREATE OR REPLACE FUNCTION public.create_monthly_invoices_v3(
+    p_month INTEGER DEFAULT NULL,
+    p_year INTEGER DEFAULT NULL
+) RETURNS JSONB
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
 DECLARE
     target_invoice_period TEXT;
     created_invoices_count INTEGER := 0;
@@ -322,21 +408,22 @@ BEGIN
         JOIN 
             public.packages pack ON prof.package_id = pack.id
         WHERE 
-            prof.status = 'AKTIF' 
-            AND prof.role = 'USER'
-            AND prof.package_id IS NOT NULL
+            prof.role = 'USER' 
+            AND prof.status = 'AKTIF'
             AND NOT EXISTS (
-                SELECT 1 FROM public.invoices inv 
-                WHERE inv.customer_id = prof.id AND LOWER(TRIM(inv.invoice_period)) = LOWER(TRIM(target_invoice_period))
+                SELECT 1 
+                FROM public.invoices inv
+                WHERE inv.customer_id = prof.id 
+                  AND inv.invoice_period = target_invoice_period
             )
     LOOP
         INSERT INTO public.invoices (
-            customer_id, 
-            package_id, 
-            invoice_period, 
-            amount, 
-            total_due, 
-            status, 
+            customer_id,
+            package_id,
+            invoice_period,
+            amount,
+            total_due,
+            status,
             due_date
         ) VALUES (
             customer_record.customer_id,
@@ -345,689 +432,377 @@ BEGIN
             customer_record.customer_price,
             customer_record.customer_price,
             'unpaid',
-            (make_date(target_y, target_m, 1) + interval '1 month' + interval '9 days')::date 
+            (target_y || '-' || LPAD(target_m::TEXT, 2, '0') || '-20')::DATE
         );
         created_invoices_count := created_invoices_count + 1;
     END LOOP;
 
-    IF created_invoices_count > 0 THEN
-        RETURN jsonb_build_object(
-            'status', 'success',
-            'message', 'Berhasil membuat ' || created_invoices_count || ' tagihan baru untuk periode ' || target_invoice_period
-        );
-    ELSE
-        RETURN jsonb_build_object(
-            'status', 'info',
-            'message', 'Tidak ada tagihan baru yang dibuat. Semua pelanggan aktif sudah memiliki tagihan untuk periode ' || target_invoice_period
-        );
-    END IF;
-
+    RETURN jsonb_build_object(
+        'status', 'success',
+        'message', 'Generated ' || created_invoices_count || ' invoices for ' || target_invoice_period,
+        'count', created_invoices_count,
+        'period', target_invoice_period
+    );
 EXCEPTION
     WHEN OTHERS THEN
-        RETURN jsonb_build_object('status', 'error', 'message', 'Error: ' || SQLERRM);
+        RETURN jsonb_build_object('status', 'error', 'message', SQLERRM);
 END;
 $$;
 
-
-ALTER FUNCTION public.create_monthly_invoices_v2() OWNER TO postgres;
-
---
--- Name: get_all_customers(text, text); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.get_all_customers(p_filter text DEFAULT 'all'::text, p_search_term text DEFAULT ''::text) RETURNS TABLE(id uuid, idpl text, full_name text, address text, gender text, whatsapp_number text, role text, photo_url text, status public.customer_status, installation_date date, device_type text, ip_static_pppoe text, created_at timestamp with time zone, churn_date date)
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
+-- 5.9. Get All Customers dengan Filter & Search (get_all_customers)
+CREATE OR REPLACE FUNCTION public.get_all_customers(
+    p_filter TEXT DEFAULT 'all',
+    p_search_term TEXT DEFAULT ''
+) RETURNS TABLE(
+    id UUID,
+    idpl TEXT,
+    full_name TEXT,
+    address TEXT,
+    gender TEXT,
+    whatsapp_number TEXT,
+    role TEXT,
+    photo_url TEXT,
+    status public.customer_status,
+    installation_date DATE,
+    device_type TEXT,
+    ip_static_pppoe TEXT,
+    created_at TIMESTAMPTZ,
+    churn_date DATE
+)
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
 BEGIN
     RETURN QUERY
     SELECT 
-        p.id,
-        p.idpl,
-        p.full_name,
-        p.address,
-        p.gender,
-        p.whatsapp_number,
-        p.role,
-        p.photo_url,
-        p.status,
-        p.installation_date,
-        p.device_type,
-        p.ip_static_pppoe,
-        p.created_at,
-        p.churn_date -- Dan di sini
+        p.id, p.idpl, p.full_name, p.address, p.gender, p.whatsapp_number,
+        p.role, p.photo_url, p.status, p.installation_date, p.device_type,
+        p.ip_static_pppoe, p.created_at, p.churn_date
     FROM public.profiles p
-    WHERE 
-        p.role = 'USER'
-        AND (
-            p_filter = 'all' OR
-            (p_filter = 'active' AND p.status = 'AKTIF'::customer_status) OR
-            (p_filter = 'inactive' AND p.status = 'NONAKTIF'::customer_status)
-        )
-        AND (
-            p_search_term = '' OR
-            LOWER(p.full_name) LIKE LOWER('%' || p_search_term || '%') OR
-            LOWER(p.idpl) LIKE LOWER('%' || p_search_term || '%') OR
-            LOWER(p.whatsapp_number) LIKE LOWER('%' || p_search_term || '%') OR
-            LOWER(p.address) LIKE LOWER('%' || p_search_term || '%')
-        )
-    ORDER BY 
-        CASE WHEN p.status = 'AKTIF'::customer_status THEN 0 ELSE 1 END,
-        p.full_name ASC;
+    WHERE p.role = 'USER'
+      AND (
+          p_filter = 'all' 
+          OR (p_filter = 'active' AND p.status = 'AKTIF')
+          OR (p_filter = 'inactive' AND p.status = 'NONAKTIF')
+      )
+      AND (
+          p_search_term = ''
+          OR p.full_name ILIKE '%' || p_search_term || '%'
+          OR p.idpl ILIKE '%' || p_search_term || '%'
+          OR p.address ILIKE '%' || p_search_term || '%'
+          OR p.whatsapp_number ILIKE '%' || p_search_term || '%'
+      )
+    ORDER BY p.created_at DESC;
 END;
 $$;
 
-
-ALTER FUNCTION public.get_all_customers(p_filter text, p_search_term text) OWNER TO postgres;
-
---
--- Name: get_dashboard_charts_data(integer); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.get_dashboard_charts_data(p_months integer DEFAULT 6) RETURNS jsonb
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
+-- 5.10. Dashboard Statistics (get_dashboard_stats)
+CREATE OR REPLACE FUNCTION public.get_dashboard_stats(
+    p_month INTEGER DEFAULT 0,
+    p_year INTEGER DEFAULT (EXTRACT(YEAR FROM CURRENT_DATE))::INTEGER
+) RETURNS TABLE(
+    total_revenue NUMERIC,
+    total_expenses NUMERIC,
+    profit NUMERIC,
+    active_customers INTEGER,
+    inactive_customers INTEGER,
+    unpaid_invoices_count INTEGER,
+    paid_invoices_count INTEGER
+)
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
 DECLARE
-    revenue_data JSONB := '[]'::jsonb;
-    expenses_data JSONB := '[]'::jsonb;
-    profit_data JSONB := '[]'::jsonb;
-    customer_growth_data JSONB := '[]'::jsonb;
-    customer_total_data JSONB := '[]'::jsonb;
-    customer_net_data JSONB := '[]'::jsonb;
-    labels_data JSONB := '[]'::jsonb;
-    current_month_start DATE;
-    month_revenue NUMERIC;
-    month_expenses NUMERIC;
-    month_profit NUMERIC;
-    month_label TEXT;
-    current_period TEXT;
-    month_new_customers INTEGER;
-    month_churned_customers INTEGER;
-    month_net_growth INTEGER;
-    month_total_active INTEGER;
-    paid_count INTEGER := 0;
-    partially_paid_count INTEGER := 0;
-    unpaid_count INTEGER := 0;
-    i INTEGER;
-    -- VARIABEL BARU UNTUK TANGGAL YANG BENAR --
-    current_date_jakarta DATE;
+    v_total_revenue NUMERIC := 0;
+    v_total_expenses NUMERIC := 0;
+    v_profit NUMERIC := 0;
+    v_active_customers INTEGER := 0;
+    v_inactive_customers INTEGER := 0;
+    v_unpaid_invoices_count INTEGER := 0;
+    v_paid_invoices_count INTEGER := 0;
 BEGIN
-    -- Mengambil tanggal saat ini dengan zona waktu Jakarta (WIB)
-    current_date_jakarta := (NOW() AT TIME ZONE 'Asia/Jakarta')::DATE;
-
-    -- Generate data untuk 6 bulan terakhir
-    FOR i IN 0..(p_months-1) LOOP
-        -- Menggunakan tanggal Jakarta untuk perhitungan
-        current_month_start := DATE_TRUNC('month', current_date_jakarta - INTERVAL '1 month' * i);
-        
-        -- Format bulan dalam bahasa Indonesia
-        month_label := CASE EXTRACT(MONTH FROM current_month_start)
-            WHEN 1 THEN 'Jan' WHEN 2 THEN 'Feb' WHEN 3 THEN 'Mar' WHEN 4 THEN 'Apr'
-            WHEN 5 THEN 'Mei' WHEN 6 THEN 'Jun' WHEN 7 THEN 'Jul' WHEN 8 THEN 'Agu'
-            WHEN 9 THEN 'Sep' WHEN 10 THEN 'Okt' WHEN 11 THEN 'Nov' WHEN 12 THEN 'Des'
-        END || ' ' || EXTRACT(YEAR FROM current_month_start);
-        
-        -- PENDAPATAN
-        SELECT COALESCE(SUM(
-            CASE 
-                WHEN amount_paid > 0 THEN amount_paid
-                WHEN total_due > 0 THEN total_due  
-                ELSE amount
-            END
-        ), 0) INTO month_revenue
-        FROM public.invoices
-        WHERE status = 'paid'
-        AND (
-            invoice_period = (
-                CASE EXTRACT(MONTH FROM current_month_start)
-                    WHEN 1 THEN 'Januari' WHEN 2 THEN 'Februari' WHEN 3 THEN 'Maret' WHEN 4 THEN 'April'
-                    WHEN 5 THEN 'Mei' WHEN 6 THEN 'Juni' WHEN 7 THEN 'Juli' WHEN 8 THEN 'Agustus'
-                    WHEN 9 THEN 'September' WHEN 10 THEN 'Oktober' WHEN 11 THEN 'November' WHEN 12 THEN 'Desember'
-                END || ' ' || EXTRACT(YEAR FROM current_month_start)
-            )
-        );
-        
-        -- PENGELUARAN
-        SELECT COALESCE(SUM(amount), 0) INTO month_expenses
-        FROM public.expenses
-        WHERE DATE_TRUNC('month', expense_date) = current_month_start;
-        
-        -- PROFIT
-        month_profit := month_revenue - month_expenses;
-        
-        -- METRIK PELANGGAN
-        SELECT COUNT(*) INTO month_new_customers FROM public.profiles WHERE DATE_TRUNC('month', installation_date) = current_month_start AND role = 'USER';
-        SELECT COUNT(*) INTO month_churned_customers FROM public.profiles WHERE DATE_TRUNC('month', churn_date) = current_month_start AND role = 'USER';
-        month_net_growth := month_new_customers - month_churned_customers;
-        SELECT COUNT(*) INTO month_total_active FROM public.profiles WHERE role = 'USER' AND status = 'AKTIF' AND installation_date <= (current_month_start + INTERVAL '1 month' - INTERVAL '1 day') AND (churn_date IS NULL OR churn_date > (current_month_start + INTERVAL '1 month' - INTERVAL '1 day'));
-        
-        -- Tambahkan ke array
-        labels_data := jsonb_insert(labels_data, '{0}', to_jsonb(month_label));
-        revenue_data := jsonb_insert(revenue_data, '{0}', to_jsonb(month_revenue));
-        expenses_data := jsonb_insert(expenses_data, '{0}', to_jsonb(month_expenses));
-        profit_data := jsonb_insert(profit_data, '{0}', to_jsonb(month_profit));
-        customer_growth_data := jsonb_insert(customer_growth_data, '{0}', to_jsonb(month_new_customers));
-        customer_net_data := jsonb_insert(customer_net_data, '{0}', to_jsonb(month_net_growth));
-        customer_total_data := jsonb_insert(customer_total_data, '{0}', to_jsonb(month_total_active));
-    END LOOP;
-    
-    -- STATUS PEMBAYARAN: Berdasarkan periode bulan ini (sesuai tanggal Jakarta)
-    current_month_start := DATE_TRUNC('month', current_date_jakarta);
-    
-    current_period := CASE EXTRACT(MONTH FROM current_month_start)
-        WHEN 1 THEN 'Januari' WHEN 2 THEN 'Februari' WHEN 3 THEN 'Maret' WHEN 4 THEN 'April'
-        WHEN 5 THEN 'Mei' WHEN 6 THEN 'Juni' WHEN 7 THEN 'Juli' WHEN 8 THEN 'Agustus'
-        WHEN 9 THEN 'September' WHEN 10 THEN 'Oktober' WHEN 11 THEN 'November' WHEN 12 THEN 'Desember'
-    END || ' ' || EXTRACT(YEAR FROM current_month_start);
-    
-    SELECT 
-        COUNT(*) FILTER (WHERE status = 'paid'),
-        COUNT(*) FILTER (WHERE status = 'partially_paid'),
-        COUNT(*) FILTER (WHERE status = 'unpaid')
-    INTO paid_count, partially_paid_count, unpaid_count
+    -- Hitung Pendapatan dari invoices (amount_paid)
+    SELECT COALESCE(SUM(amount_paid), 0) INTO v_total_revenue
     FROM public.invoices
-    WHERE invoice_period = current_period;
-    
-    RETURN jsonb_build_object(
-        'revenue_chart', jsonb_build_object('labels', labels_data, 'datasets', jsonb_build_array(jsonb_build_object('label', 'Pendapatan', 'data', revenue_data, 'borderColor', '#10B981', 'backgroundColor', 'rgba(16, 185, 129, 0.1)', 'tension', 0.4, 'fill', true), jsonb_build_object('label', 'Pengeluaran', 'data', expenses_data, 'borderColor', '#EF4444', 'backgroundColor', 'rgba(239, 68, 68, 0.1)', 'tension', 0.4, 'fill', true), jsonb_build_object('label', 'Profit', 'data', profit_data, 'borderColor', '#6366F1', 'backgroundColor', 'rgba(99, 102, 241, 0.1)', 'tension', 0.4, 'fill', true))),
-        'payment_status_chart', jsonb_build_object('labels', jsonb_build_array('Lunas', 'Cicilan', 'Belum Bayar'), 'datasets', jsonb_build_array(jsonb_build_object('data', jsonb_build_array(paid_count, partially_paid_count, unpaid_count), 'backgroundColor', jsonb_build_array('#10B981', '#F59E0B', '#EF4444'), 'borderColor', jsonb_build_array('#059669', '#D97706', '#DC2626'), 'borderWidth', 2))),
-        'customer_growth_chart', jsonb_build_object('labels', labels_data, 'datasets', jsonb_build_array(jsonb_build_object('label', 'Pelanggan Baru', 'data', customer_growth_data, 'backgroundColor', '#10B981', 'borderColor', '#059669', 'borderWidth', 2, 'borderRadius', 4), jsonb_build_object('label', 'Pelanggan Cabut', 'data', customer_net_data, 'backgroundColor', '#EF4444', 'borderColor', '#DC2626', 'borderWidth', 2, 'borderRadius', 4))),
-        'customer_total_chart', jsonb_build_object('labels', labels_data, 'datasets', jsonb_build_array(jsonb_build_object('label', 'Total Pelanggan Aktif', 'data', customer_total_data, 'borderColor', '#8B5CF6', 'backgroundColor', 'rgba(139, 92, 246, 0.1)', 'tension', 0.4, 'fill', true)))
-    );
-END;
-$$;
-
-
-ALTER FUNCTION public.get_dashboard_charts_data(p_months integer) OWNER TO postgres;
-
---
--- Name: get_dashboard_charts_data_alt(integer); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.get_dashboard_charts_data_alt(p_months integer DEFAULT 6) RETURNS jsonb
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    revenue_data JSONB := '[]'::jsonb;
-    expenses_data JSONB := '[]'::jsonb;
-    profit_data JSONB := '[]'::jsonb;
-    labels_data JSONB := '[]'::jsonb;
-    payment_status_data JSONB;
-    customer_growth_data JSONB := '[]'::jsonb;
-    current_month_start DATE;
-    month_revenue NUMERIC;
-    month_expenses NUMERIC;
-    month_profit NUMERIC;
-    month_label TEXT;
-    month_customers INTEGER;
-    paid_count INTEGER := 0;
-    partially_paid_count INTEGER := 0;
-    unpaid_count INTEGER := 0;
-    i INTEGER;
-BEGIN
-    -- Generate data untuk bulan terakhir (reverse chronological order)
-    FOR i IN 0..(p_months-1) LOOP
-        current_month_start := DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month' * i);
-        
-        -- Format bulan dalam bahasa Indonesia
-        month_label := CASE EXTRACT(MONTH FROM current_month_start)
-            WHEN 1 THEN 'Jan'
-            WHEN 2 THEN 'Feb'
-            WHEN 3 THEN 'Mar'
-            WHEN 4 THEN 'Apr'
-            WHEN 5 THEN 'Mei'
-            WHEN 6 THEN 'Jun'
-            WHEN 7 THEN 'Jul'
-            WHEN 8 THEN 'Agu'
-            WHEN 9 THEN 'Sep'
-            WHEN 10 THEN 'Okt'
-            WHEN 11 THEN 'Nov'
-            WHEN 12 THEN 'Des'
-        END || ' ' || EXTRACT(YEAR FROM current_month_start);
-        
-        -- REVENUE: Total invoice yang DIBUAT dalam bulan ini (total_due)
-        SELECT COALESCE(SUM(total_due), 0) INTO month_revenue
-        FROM public.invoices
-        WHERE DATE_TRUNC('month', created_at) = current_month_start;
-        
-        -- Jika tidak ada total_due, gunakan amount
-        IF month_revenue = 0 THEN
-            SELECT COALESCE(SUM(amount), 0) INTO month_revenue
-            FROM public.invoices
-            WHERE DATE_TRUNC('month', created_at) = current_month_start;
-        END IF;
-        
-        -- EXPENSES: Total pengeluaran dalam bulan ini
-        SELECT COALESCE(SUM(amount), 0) INTO month_expenses
-        FROM public.expenses
-        WHERE DATE_TRUNC('month', expense_date) = current_month_start;
-        
-        -- PROFIT: Revenue - Expenses
-        month_profit := month_revenue - month_expenses;
-        
-        -- CUSTOMER GROWTH: Pelanggan baru dalam bulan ini
-        SELECT COUNT(*) INTO month_customers
-        FROM public.profiles
-        WHERE DATE_TRUNC('month', created_at) = current_month_start
-        AND role = 'USER';
-        
-        -- Tambahkan ke array (reverse order untuk chronological)
-        labels_data := jsonb_insert(labels_data, '{0}', to_jsonb(month_label));
-        revenue_data := jsonb_insert(revenue_data, '{0}', to_jsonb(month_revenue));
-        expenses_data := jsonb_insert(expenses_data, '{0}', to_jsonb(month_expenses));
-        profit_data := jsonb_insert(profit_data, '{0}', to_jsonb(month_profit));
-        customer_growth_data := jsonb_insert(customer_growth_data, '{0}', to_jsonb(month_customers));
-    END LOOP;
-    
-    -- PAYMENT STATUS: Invoice yang DIBUAT bulan ini
-    current_month_start := DATE_TRUNC('month', CURRENT_DATE);
-    
-    BEGIN
-        SELECT 
-            COUNT(*) FILTER (WHERE status::text = 'paid'),
-            COUNT(*) FILTER (WHERE status::text = 'partially_paid'),
-            COUNT(*) FILTER (WHERE status::text = 'unpaid')
-        INTO paid_count, partially_paid_count, unpaid_count
-        FROM public.invoices
-        WHERE DATE_TRUNC('month', created_at) = current_month_start;
-    EXCEPTION
-        WHEN OTHERS THEN
-            -- Fallback jika ada error dengan enum
-            SELECT 
-                COUNT(*) FILTER (WHERE status = 'paid'),
-                COUNT(*) FILTER (WHERE status = 'partially_paid'), 
-                COUNT(*) FILTER (WHERE status = 'unpaid')
-            INTO paid_count, partially_paid_count, unpaid_count
-            FROM public.invoices
-            WHERE DATE_TRUNC('month', created_at) = current_month_start;
-    END;
-    
-    -- Build payment status data dengan format yang benar untuk Chart.js
-    payment_status_data := jsonb_build_object(
-        'labels', jsonb_build_array('Lunas', 'Cicilan', 'Belum Bayar'),
-        'datasets', jsonb_build_array(
-            jsonb_build_object(
-                'data', jsonb_build_array(paid_count, partially_paid_count, unpaid_count),
-                'backgroundColor', jsonb_build_array('#10B981', '#F59E0B', '#EF4444'),
-                'borderColor', jsonb_build_array('#059669', '#D97706', '#DC2626'),
-                'borderWidth', 2
-            )
-        )
-    );
-    
-    -- Return semua data chart
-    RETURN jsonb_build_object(
-        'revenue_chart', jsonb_build_object(
-            'labels', labels_data,
-            'datasets', jsonb_build_array(
-                jsonb_build_object(
-                    'label', 'Invoice Dibuat',
-                    'data', revenue_data,
-                    'borderColor', '#10B981',
-                    'backgroundColor', 'rgba(16, 185, 129, 0.1)',
-                    'tension', 0.4,
-                    'fill', true
-                ),
-                jsonb_build_object(
-                    'label', 'Pengeluaran', 
-                    'data', expenses_data,
-                    'borderColor', '#EF4444',
-                    'backgroundColor', 'rgba(239, 68, 68, 0.1)',
-                    'tension', 0.4,
-                    'fill', true
-                ),
-                jsonb_build_object(
-                    'label', 'Selisih',
-                    'data', profit_data,
-                    'borderColor', '#6366F1',
-                    'backgroundColor', 'rgba(99, 102, 241, 0.1)',
-                    'tension', 0.4,
-                    'fill', true
-                )
-            )
-        ),
-        'payment_status_chart', payment_status_data,
-        'customer_growth_chart', jsonb_build_object(
-            'labels', labels_data,
-            'datasets', jsonb_build_array(
-                jsonb_build_object(
-                    'label', 'Pelanggan Baru',
-                    'data', customer_growth_data,
-                    'backgroundColor', '#8B5CF6',
-                    'borderColor', '#7C3AED',
-                    'borderWidth', 2,
-                    'borderRadius', 4
-                )
-            )
-        ),
-        'debug_info', jsonb_build_object(
-            'paid_count', paid_count,
-            'partially_paid_count', partially_paid_count,
-            'unpaid_count', unpaid_count,
-            'total_current_month', paid_count + partially_paid_count + unpaid_count,
-            'logic', 'Revenue berdasarkan invoice created_at, Payment Status berdasarkan created_at bulan ini'
-        )
-    );
-END;
-$$;
-
-
-ALTER FUNCTION public.get_dashboard_charts_data_alt(p_months integer) OWNER TO postgres;
-
---
--- Name: get_dashboard_stats(integer, integer); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.get_dashboard_stats(p_month integer DEFAULT 0, p_year integer DEFAULT (EXTRACT(year FROM CURRENT_DATE))::integer) RETURNS TABLE(total_revenue numeric, total_expenses numeric, profit numeric, active_customers integer, inactive_customers integer, unpaid_invoices_count integer, paid_invoices_count integer)
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    target_period TEXT;
-    month_name TEXT;
-BEGIN
-    -- Jika p_month = 0, hitung untuk semua bulan di tahun tersebut
-    -- Jika p_month > 0, hitung untuk bulan spesifik
-    
-    IF p_month > 0 THEN
-        -- Convert month number to Indonesian month name
-        month_name := CASE p_month
-            WHEN 1 THEN 'Januari'
-            WHEN 2 THEN 'Februari'
-            WHEN 3 THEN 'Maret'
-            WHEN 4 THEN 'April'
-            WHEN 5 THEN 'Mei'
-            WHEN 6 THEN 'Juni'
-            WHEN 7 THEN 'Juli'
-            WHEN 8 THEN 'Agustus'
-            WHEN 9 THEN 'September'
-            WHEN 10 THEN 'Oktober'
-            WHEN 11 THEN 'November'
-            WHEN 12 THEN 'Desember'
-        END;
-        target_period := month_name || ' ' || p_year;
-    END IF;
-
-    RETURN QUERY
-    SELECT 
-        -- TOTAL REVENUE: Jumlah yang sudah dibayar (amount_paid) dari semua invoice
-        COALESCE(
-            (SELECT SUM(i.amount_paid) 
-             FROM public.invoices i 
-             WHERE (p_month = 0 OR i.invoice_period = target_period)
-             AND (p_month > 0 OR EXTRACT(YEAR FROM i.created_at) = p_year)
-             AND i.amount_paid > 0
-            ), 0
-        ) as total_revenue,
-        
-        -- TOTAL EXPENSES: Pengeluaran dari tabel expenses
-        COALESCE(
-            (SELECT SUM(e.amount) 
-             FROM public.expenses e 
-             WHERE (p_month = 0 OR EXTRACT(MONTH FROM e.expense_date) = p_month)
-             AND EXTRACT(YEAR FROM e.expense_date) = p_year
-            ), 0
-        ) as total_expenses,
-        
-        -- PROFIT: Revenue - Expenses
-        COALESCE(
-            (SELECT SUM(i.amount_paid) 
-             FROM public.invoices i 
-             WHERE (p_month = 0 OR i.invoice_period = target_period)
-             AND (p_month > 0 OR EXTRACT(YEAR FROM i.created_at) = p_year)
-             AND i.amount_paid > 0
-            ), 0
-        ) - COALESCE(
-            (SELECT SUM(e.amount) 
-             FROM public.expenses e 
-             WHERE (p_month = 0 OR EXTRACT(MONTH FROM e.expense_date) = p_month)
-             AND EXTRACT(YEAR FROM e.expense_date) = p_year
-            ), 0
-        ) as profit,
-        
-        -- ACTIVE CUSTOMERS: Pelanggan dengan status AKTIF dan role USER
-        COALESCE(
-            (SELECT COUNT(*) 
-             FROM public.profiles p 
-             WHERE p.status = 'AKTIF' 
-             AND p.role = 'USER'
-            ), 0
-        )::INTEGER as active_customers,
-        
-        -- INACTIVE CUSTOMERS: Pelanggan dengan status NONAKTIF dan role USER
-        COALESCE(
-            (SELECT COUNT(*) 
-             FROM public.profiles p 
-             WHERE p.status = 'NONAKTIF' 
-             AND p.role = 'USER'
-            ), 0
-        )::INTEGER as inactive_customers,
-        
-        -- UNPAID INVOICES COUNT: Tagihan belum dibayar (unpaid + partially_paid)
-        COALESCE(
-            (SELECT COUNT(*) 
-             FROM public.invoices i 
-             WHERE (p_month = 0 OR i.invoice_period = target_period)
-             AND (p_month > 0 OR EXTRACT(YEAR FROM i.created_at) = p_year)
-             AND i.status IN ('unpaid', 'partially_paid')
-            ), 0
-        )::INTEGER as unpaid_invoices_count,
-        
-        -- PAID INVOICES COUNT: Tagihan lunas
-        COALESCE(
-            (SELECT COUNT(*) 
-             FROM public.invoices i 
-             WHERE (p_month = 0 OR i.invoice_period = target_period)
-             AND (p_month > 0 OR EXTRACT(YEAR FROM i.created_at) = p_year)
-             AND i.status = 'paid'
-            ), 0
-        )::INTEGER as paid_invoices_count;
-END;
-$$;
-
-
-ALTER FUNCTION public.get_dashboard_stats(p_month integer, p_year integer) OWNER TO postgres;
-
---
--- Name: get_invoices_with_payment_info(text, uuid); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.get_invoices_with_payment_info(p_status text DEFAULT 'all'::text, p_customer_id uuid DEFAULT NULL::uuid) RETURNS TABLE(id uuid, customer_id uuid, customer_name text, whatsapp_number text, invoice_period text, total_due numeric, amount_paid numeric, remaining_amount numeric, status public.invoice_status, due_date date, last_payment_date timestamp with time zone, payment_count integer, created_at timestamp with time zone)
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        i.id,
-        i.customer_id,
-        p.full_name as customer_name,
-        p.whatsapp_number,
-        i.invoice_period,
-        i.total_due,
-        i.amount_paid,
-        i.amount as remaining_amount,
-        i.status,
-        i.due_date,
-        i.last_payment_date,
-        COALESCE(jsonb_array_length(i.payment_history), 0)::INTEGER as payment_count,
-        i.created_at
-    FROM public.invoices i
-    LEFT JOIN public.profiles p ON i.customer_id = p.id
     WHERE 
-        (p_status = 'all' OR i.status::TEXT = p_status) AND
-        (p_customer_id IS NULL OR i.customer_id = p_customer_id)
-    ORDER BY 
-        CASE 
-            WHEN i.status = 'unpaid' THEN 1
-            WHEN i.status = 'partially_paid' THEN 2
-            WHEN i.status = 'overdue' THEN 3
-            WHEN i.status = 'paid' THEN 4
-        END,
-        i.created_at DESC;
+        (p_month = 0 OR EXTRACT(MONTH FROM COALESCE(last_payment_date, paid_at, created_at)) = p_month)
+        AND (p_year = 0 OR EXTRACT(YEAR FROM COALESCE(last_payment_date, paid_at, created_at)) = p_year)
+        AND amount_paid > 0;
+
+    -- Hitung Pengeluaran
+    SELECT COALESCE(SUM(amount), 0) INTO v_total_expenses
+    FROM public.expenses
+    WHERE 
+        (p_month = 0 OR EXTRACT(MONTH FROM expense_date) = p_month)
+        AND (p_year = 0 OR EXTRACT(YEAR FROM expense_date) = p_year);
+
+    v_profit := v_total_revenue - v_total_expenses;
+
+    -- Jumlah Pelanggan
+    SELECT 
+        COUNT(CASE WHEN status = 'AKTIF' THEN 1 END),
+        COUNT(CASE WHEN status = 'NONAKTIF' THEN 1 END)
+    INTO v_active_customers, v_inactive_customers
+    FROM public.profiles
+    WHERE role = 'USER';
+
+    -- Status Tagihan
+    SELECT 
+        COUNT(CASE WHEN status = 'unpaid' THEN 1 END),
+        COUNT(CASE WHEN status = 'paid' THEN 1 END)
+    INTO v_unpaid_invoices_count, v_paid_invoices_count
+    FROM public.invoices
+    WHERE 
+        (p_month = 0 OR EXTRACT(MONTH FROM created_at) = p_month)
+        AND (p_year = 0 OR EXTRACT(YEAR FROM created_at) = p_year);
+
+    RETURN QUERY SELECT 
+        v_total_revenue,
+        v_total_expenses,
+        v_profit,
+        v_active_customers,
+        v_inactive_customers,
+        v_unpaid_invoices_count,
+        v_paid_invoices_count;
 END;
 $$;
 
-
-ALTER FUNCTION public.get_invoices_with_payment_info(p_status text, p_customer_id uuid) OWNER TO postgres;
-
---
--- Name: get_payment_history(uuid); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.get_payment_history(p_invoice_id uuid) RETURNS jsonb
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
+-- 5.11. Dashboard Chart Data (get_dashboard_charts_data)
+CREATE OR REPLACE FUNCTION public.get_dashboard_charts_data(p_months INTEGER DEFAULT 6)
+RETURNS JSONB
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
 DECLARE
-    invoice_data RECORD;
-    history_result JSONB;
+    chart_data JSONB := '[]'::jsonb;
+    month_cursor DATE;
+    start_date DATE;
+    m_name TEXT;
+    m_num INTEGER;
+    y_num INTEGER;
+    rev NUMERIC;
+    exp NUMERIC;
 BEGIN
-    -- Ambil data invoice dan history
+    start_date := (DATE_TRUNC('month', CURRENT_DATE) - ((p_months - 1) || ' months')::INTERVAL)::DATE;
+
+    FOR i IN 0..(p_months - 1) LOOP
+        month_cursor := (start_date + (i || ' months')::INTERVAL)::DATE;
+        m_num := EXTRACT(MONTH FROM month_cursor)::INTEGER;
+        y_num := EXTRACT(YEAR FROM month_cursor)::INTEGER;
+
+        SELECT CASE m_num
+            WHEN 1 THEN 'Jan' WHEN 2 THEN 'Feb' WHEN 3 THEN 'Mar'
+            WHEN 4 THEN 'Apr' WHEN 5 THEN 'Mei' WHEN 6 THEN 'Jun'
+            WHEN 7 THEN 'Jul' WHEN 8 THEN 'Agu' WHEN 9 THEN 'Sep'
+            WHEN 10 THEN 'Okt' WHEN 11 THEN 'Nov' WHEN 12 THEN 'Des'
+        END INTO m_name;
+
+        SELECT COALESCE(SUM(amount_paid), 0) INTO rev
+        FROM public.invoices
+        WHERE EXTRACT(MONTH FROM COALESCE(last_payment_date, paid_at, created_at)) = m_num
+          AND EXTRACT(YEAR FROM COALESCE(last_payment_date, paid_at, created_at)) = y_num;
+
+        SELECT COALESCE(SUM(amount), 0) INTO exp
+        FROM public.expenses
+        WHERE EXTRACT(MONTH FROM expense_date) = m_num
+          AND EXTRACT(YEAR FROM expense_date) = y_num;
+
+        chart_data := chart_data || jsonb_build_object(
+            'period', m_name || ' ' || y_num,
+            'revenue', rev,
+            'expense', exp,
+            'profit', rev - exp
+        );
+    END LOOP;
+
+    RETURN chart_data;
+END;
+$$;
+
+-- 5.12. Get Invoices With Payment Info (get_invoices_with_payment_info)
+CREATE OR REPLACE FUNCTION public.get_invoices_with_payment_info(
+    p_status TEXT DEFAULT 'all',
+    p_customer_id UUID DEFAULT NULL
+) RETURNS TABLE(
+    id UUID,
+    customer_id UUID,
+    customer_name TEXT,
+    whatsapp_number TEXT,
+    invoice_period TEXT,
+    total_due NUMERIC,
+    amount_paid NUMERIC,
+    remaining_amount NUMERIC,
+    status public.invoice_status,
+    due_date DATE,
+    last_payment_date TIMESTAMPTZ,
+    payment_count INTEGER,
+    created_at TIMESTAMPTZ
+)
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+BEGIN
+    RETURN QUERY
     SELECT 
-        id, total_due, amount_paid, amount, status, 
-        payment_history, invoice_period,
-        p.full_name as customer_name
-    INTO invoice_data
-    FROM public.invoices i
-    LEFT JOIN public.profiles p ON i.customer_id = p.id
-    WHERE i.id = p_invoice_id;
+        inv.id,
+        inv.customer_id,
+        p.full_name AS customer_name,
+        p.whatsapp_number,
+        inv.invoice_period,
+        COALESCE(inv.total_due, inv.amount) AS total_due,
+        COALESCE(inv.amount_paid, 0) AS amount_paid,
+        (COALESCE(inv.total_due, inv.amount) - COALESCE(inv.amount_paid, 0)) AS remaining_amount,
+        inv.status,
+        inv.due_date,
+        inv.last_payment_date,
+        COALESCE(jsonb_array_length(inv.payment_history), 0)::INTEGER AS payment_count,
+        inv.created_at
+    FROM public.invoices inv
+    JOIN public.profiles p ON inv.customer_id = p.id
+    WHERE 
+        (p_customer_id IS NULL OR inv.customer_id = p_customer_id)
+        AND (
+            p_status = 'all'
+            OR (p_status = 'paid' AND inv.status = 'paid')
+            OR (p_status = 'unpaid' AND inv.status IN ('unpaid', 'partially_paid'))
+            OR (p_status = 'overdue' AND inv.status = 'overdue')
+        )
+    ORDER BY inv.created_at DESC;
+END;
+$$;
+
+-- 5.13. Get Payment History (get_payment_history)
+CREATE OR REPLACE FUNCTION public.get_payment_history(p_invoice_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+DECLARE
+    history JSONB;
+BEGIN
+    SELECT COALESCE(payment_history, '[]'::jsonb) INTO history
+    FROM public.invoices
+    WHERE id = p_invoice_id;
+    
+    RETURN history;
+END;
+$$;
+
+-- 5.14. Proses Pembayaran Cicilan / Pelunasan (process_installment_payment)
+CREATE OR REPLACE FUNCTION public.process_installment_payment(
+    p_invoice_id UUID,
+    p_payment_amount NUMERIC,
+    p_admin_name TEXT,
+    p_payment_method TEXT DEFAULT 'cash',
+    p_note TEXT DEFAULT ''
+) RETURNS JSONB
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
+DECLARE
+    current_invoice RECORD;
+    v_total_due NUMERIC;
+    v_new_amount_paid NUMERIC;
+    v_new_remaining NUMERIC;
+    v_new_status public.invoice_status;
+    new_entry JSONB;
+    current_history JSONB;
+BEGIN
+    SELECT * INTO current_invoice FROM public.invoices WHERE id = p_invoice_id;
 
     IF NOT FOUND THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'message', 'Invoice tidak ditemukan'
-        );
+        RETURN jsonb_build_object('success', false, 'message', 'Tagihan tidak ditemukan');
     END IF;
 
-    -- Format hasil
-    history_result := jsonb_build_object(
-        'success', true,
-        'data', jsonb_build_object(
-            'invoice_id', invoice_data.id,
-            'customer_name', invoice_data.customer_name,
-            'invoice_period', invoice_data.invoice_period,
-            'total_due', invoice_data.total_due,
-            'amount_paid', invoice_data.amount_paid,
-            'remaining_amount', invoice_data.amount,
-            'status', invoice_data.status,
-            'payment_history', COALESCE(invoice_data.payment_history, '[]'::jsonb)
-        )
+    IF current_invoice.status = 'paid' THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Tagihan sudah lunas');
+    END IF;
+
+    IF p_payment_amount <= 0 THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Jumlah pembayaran harus lebih dari 0');
+    END IF;
+
+    v_total_due := COALESCE(current_invoice.total_due, current_invoice.amount);
+    v_new_amount_paid := COALESCE(current_invoice.amount_paid, 0) + p_payment_amount;
+    v_new_remaining := v_total_due - v_new_amount_paid;
+
+    IF v_new_remaining < 0 THEN
+        RETURN jsonb_build_object('success', false, 'message', 'Pembayaran melebihi sisa tagihan');
+    END IF;
+
+    IF v_new_remaining = 0 THEN
+        v_new_status := 'paid';
+    ELSE
+        v_new_status := 'partially_paid';
+    END IF;
+
+    new_entry := jsonb_build_object(
+        'payment_id', gen_random_uuid(),
+        'amount', p_payment_amount,
+        'paid_at', NOW(),
+        'processed_by', p_admin_name,
+        'payment_method', p_payment_method,
+        'note', p_note,
+        'remaining_after', v_new_remaining
     );
 
-    RETURN history_result;
+    current_history := COALESCE(current_invoice.payment_history, '[]'::jsonb) || jsonb_build_array(new_entry);
+
+    UPDATE public.invoices
+    SET 
+        amount_paid = v_new_amount_paid,
+        status = v_new_status,
+        last_payment_date = NOW(),
+        paid_at = CASE WHEN v_new_status = 'paid' THEN NOW() ELSE paid_at END,
+        payment_method = p_payment_method,
+        payment_history = current_history
+    WHERE id = p_invoice_id;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'message', 'Pembayaran berhasil diproses',
+        'status', v_new_status,
+        'amount_paid', v_new_amount_paid,
+        'remaining_amount', v_new_remaining
+    );
 END;
 $$;
 
-
-ALTER FUNCTION public.get_payment_history(p_invoice_id uuid) OWNER TO postgres;
-
---
--- Name: get_unread_notification_count(uuid); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.get_unread_notification_count(user_id_param uuid) RETURNS integer
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
+-- 5.15. Notifikasi RPC Helpers
+CREATE OR REPLACE FUNCTION public.get_unread_notification_count(user_id_param UUID)
+RETURNS INTEGER
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
 DECLARE
     unread_count INTEGER;
-    current_user_role TEXT;
+    u_role TEXT;
 BEGIN
-    -- Validasi authentication
-    IF auth.uid() IS NULL THEN
-        RAISE EXCEPTION 'Access denied: User not authenticated';
-    END IF;
+    SELECT role INTO u_role FROM public.profiles WHERE id = user_id_param;
 
-    -- Ambil role user dari tabel profiles
-    SELECT p.role INTO current_user_role
-    FROM public.profiles p
-    WHERE p.id = user_id_param;
-
-    -- Jika user tidak ditemukan, return 0
-    IF current_user_role IS NULL THEN
-        RETURN 0;
-    END IF;
-
-    -- Hitung notifikasi yang belum dibaca
-    SELECT COUNT(*)
-    INTO unread_count
+    SELECT COUNT(*)::INTEGER INTO unread_count
     FROM public.notifications n
-    LEFT JOIN public.notification_reads nr ON n.id = nr.notification_id AND nr.user_id = user_id_param
-    WHERE
-        -- Filter notifikasi yang relevan untuk user
-        (
-            (n.recipient_role IS NULL AND n.recipient_user_id IS NULL)
-            OR
-            (n.recipient_role = current_user_role AND n.recipient_user_id IS NULL)
-            OR
-            (n.recipient_user_id = user_id_param)
-        )
-        AND nr.notification_id IS NULL; -- Belum dibaca
+    WHERE (n.recipient_user_id = user_id_param OR (n.recipient_role = u_role AND n.recipient_user_id IS NULL))
+      AND NOT EXISTS (
+          SELECT 1 FROM public.notification_reads nr
+          WHERE nr.notification_id = n.id AND nr.user_id = user_id_param
+      );
 
     RETURN COALESCE(unread_count, 0);
 END;
 $$;
 
-
-ALTER FUNCTION public.get_unread_notification_count(user_id_param uuid) OWNER TO postgres;
-
---
--- Name: get_user_email(uuid); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.get_user_email(user_id uuid) RETURNS text
-    LANGUAGE sql STABLE SECURITY DEFINER
-    AS $$
-  SELECT email
-  FROM auth.users
-  WHERE id = user_id
-$$;
-
-
-ALTER FUNCTION public.get_user_email(user_id uuid) OWNER TO postgres;
-
---
--- Name: get_user_notifications(uuid); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.get_user_notifications(user_id_param uuid DEFAULT NULL::uuid) RETURNS TABLE(id uuid, title text, body text, url text, created_at timestamp with time zone, is_read boolean)
-    LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'public'
-    AS $$
+CREATE OR REPLACE FUNCTION public.get_user_notifications(user_id_param UUID DEFAULT NULL)
+RETURNS TABLE(
+    id UUID,
+    title TEXT,
+    body TEXT,
+    url TEXT,
+    created_at TIMESTAMPTZ,
+    is_read BOOLEAN
+)
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
 DECLARE
-    current_user_id uuid;
-    current_user_role text;
+    target_user UUID;
+    u_role TEXT;
 BEGIN
-    -- Validasi bahwa user yang memanggil adalah authenticated
-    IF auth.uid() IS NULL THEN
-        RAISE EXCEPTION 'Access denied: User not authenticated';
-    END IF;
-    
-    -- Jika user_id_param tidak diberikan, ambil dari auth.uid()
-    IF user_id_param IS NULL THEN
-        current_user_id := auth.uid();
-    ELSE
-        current_user_id := user_id_param;
-        -- Validasi bahwa user hanya bisa mengakses notifikasi mereka sendiri
-        -- kecuali jika mereka adalah ADMIN
-        IF current_user_id != auth.uid() THEN
-            SELECT p.role INTO current_user_role 
-            FROM public.profiles p 
-            WHERE p.id = auth.uid();
-            
-            IF current_user_role != 'ADMIN' THEN
-                RAISE EXCEPTION 'Access denied: Cannot access other user notifications';
-            END IF;
-        END IF;
-    END IF;
-    
-    -- Ambil role user dari tabel profiles
-    SELECT p.role INTO current_user_role 
-    FROM public.profiles p 
-    WHERE p.id = current_user_id;
-    
-    -- Jika user tidak ditemukan, return empty
-    IF current_user_role IS NULL THEN
-        RETURN;
-    END IF;
-    
-    -- Return notifikasi yang relevan untuk user
+    target_user := COALESCE(user_id_param, auth.uid());
+    SELECT role INTO u_role FROM public.profiles WHERE id = target_user;
+
     RETURN QUERY
     SELECT 
         n.id,
@@ -1035,1794 +810,480 @@ BEGIN
         n.body,
         n.url,
         n.created_at,
-        CASE 
-            WHEN nr.id IS NOT NULL THEN true 
-            ELSE false 
-        END as is_read
+        EXISTS (
+            SELECT 1 FROM public.notification_reads nr
+            WHERE nr.notification_id = n.id AND nr.user_id = target_user
+        ) AS is_read
     FROM public.notifications n
-    LEFT JOIN public.notification_reads nr ON n.id = nr.notification_id AND nr.user_id = current_user_id
-    WHERE 
-        -- Notifikasi untuk semua user
-        (n.recipient_role IS NULL AND n.recipient_user_id IS NULL)
-        OR
-        -- Notifikasi untuk role tertentu
-        (n.recipient_role = current_user_role AND n.recipient_user_id IS NULL)
-        OR
-        -- Notifikasi untuk user spesifik
-        (n.recipient_user_id = current_user_id)
-    ORDER BY n.created_at DESC;
+    WHERE n.recipient_user_id = target_user 
+       OR (n.recipient_role = u_role AND n.recipient_user_id IS NULL)
+    ORDER BY n.created_at DESC
+    LIMIT 50;
 END;
 $$;
 
-
-ALTER FUNCTION public.get_user_notifications(user_id_param uuid) OWNER TO postgres;
-
---
--- Name: get_user_role(uuid); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.get_user_role(user_id uuid) RETURNS text
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-  BEGIN
-    RETURN (SELECT role FROM public.profiles WHERE id = user_id);
-  END;
-  $$;
-
-
-ALTER FUNCTION public.get_user_role(user_id uuid) OWNER TO postgres;
-
---
--- Name: log_admin_activity(uuid, text, text, jsonb, timestamp with time zone); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.log_admin_activity(admin_id uuid, action text, description text, additional_data jsonb DEFAULT '{}'::jsonb, activity_timestamp timestamp with time zone DEFAULT now()) RETURNS void
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
+CREATE OR REPLACE FUNCTION public.mark_notification_read(
+    notification_id_param UUID,
+    user_id_param UUID
+) RETURNS BOOLEAN
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
 BEGIN
-    -- Validasi bahwa user yang memanggil adalah authenticated admin
-    IF auth.uid() IS NULL THEN
-        RAISE EXCEPTION 'Access denied: User not authenticated';
-    END IF;
-
-    -- Validasi bahwa admin_id sesuai dengan user yang login atau user adalah admin
-    IF admin_id != auth.uid() THEN
-        DECLARE
-            current_user_role TEXT;
-        BEGIN
-            SELECT p.role INTO current_user_role
-            FROM public.profiles p
-            WHERE p.id = auth.uid();
-
-            IF current_user_role != 'ADMIN' THEN
-                RAISE EXCEPTION 'Access denied: Cannot log activity for other users';
-            END IF;
-        END;
-    END IF;
-
-    INSERT INTO public.admin_activity_log (
-        admin_id,
-        action,
-        description,
-        additional_data,
-        timestamp
-    ) VALUES (
-        admin_id,
-        action,
-        description,
-        additional_data,
-        activity_timestamp
-    );
-END;
-$$;
-
-
-ALTER FUNCTION public.log_admin_activity(admin_id uuid, action text, description text, additional_data jsonb, activity_timestamp timestamp with time zone) OWNER TO postgres;
-
---
--- Name: mark_notification_read(uuid, uuid); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.mark_notification_read(notification_id_param uuid, user_id_param uuid) RETURNS boolean
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-BEGIN
-    -- Validasi authentication
-    IF auth.uid() IS NULL THEN
-        RETURN false;
-    END IF;
-
-    -- Validasi bahwa user hanya bisa mark notifikasi mereka sendiri
-    IF user_id_param != auth.uid() THEN
-        DECLARE
-            current_user_role TEXT;
-        BEGIN
-            SELECT p.role INTO current_user_role
-            FROM public.profiles p
-            WHERE p.id = auth.uid();
-
-            IF current_user_role != 'ADMIN' THEN
-                RETURN false;
-            END IF;
-        END;
-    END IF;
-
     INSERT INTO public.notification_reads (notification_id, user_id, read_at)
     VALUES (notification_id_param, user_id_param, NOW())
-    ON CONFLICT (notification_id, user_id) DO NOTHING;
-
-    RETURN true;
-EXCEPTION
-    WHEN OTHERS THEN
-        RETURN false;
+    ON CONFLICT (notification_id, user_id) DO UPDATE SET read_at = NOW();
+    RETURN TRUE;
 END;
 $$;
 
-
-ALTER FUNCTION public.mark_notification_read(notification_id_param uuid, user_id_param uuid) OWNER TO postgres;
-
---
--- Name: process_installment_payment(uuid, numeric, text, text, text); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.process_installment_payment(p_invoice_id uuid, p_payment_amount numeric, p_admin_name text, p_payment_method text DEFAULT 'cash'::text, p_note text DEFAULT ''::text) RETURNS jsonb
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    current_invoice RECORD;
-    new_amount_paid NUMERIC;
-    new_remaining_amount NUMERIC;
-    new_status TEXT;
-    new_history_entry JSONB;
-    current_history JSONB;
-    result_message TEXT;
+CREATE OR REPLACE FUNCTION public.send_admin_login_notification(admin_name TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
 BEGIN
-    -- Ambil data invoice saat ini
-    SELECT 
-        id, total_due, amount_paid, amount, status, payment_history,
-        customer_id, invoice_period
-    INTO current_invoice
-    FROM public.invoices
-    WHERE id = p_invoice_id;
-
-    -- Validasi: Invoice harus ada
-    IF NOT FOUND THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'message', 'Invoice tidak ditemukan'
-        );
-    END IF;
-
-    -- Validasi: Invoice tidak boleh sudah lunas
-    IF current_invoice.status = 'paid' THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'message', 'Invoice sudah lunas, tidak bisa dibayar lagi'
-        );
-    END IF;
-
-    -- Validasi: Amount tidak boleh 0 atau negatif
-    IF p_payment_amount <= 0 THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'message', 'Jumlah pembayaran harus lebih dari 0'
-        );
-    END IF;
-
-    -- Validasi: Amount tidak boleh melebihi sisa tagihan
-    IF p_payment_amount > current_invoice.amount THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'message', 'Jumlah pembayaran melebihi sisa tagihan (Rp ' || 
-                      TO_CHAR(current_invoice.amount, 'FM999,999,999') || ')'
-        );
-    END IF;
-
-    -- Hitung nilai baru
-    new_amount_paid := current_invoice.amount_paid + p_payment_amount;
-    new_remaining_amount := current_invoice.total_due - new_amount_paid;
-    
-    -- Tentukan status baru
-    IF new_remaining_amount <= 0 THEN
-        new_status := 'paid';
-        new_remaining_amount := 0; -- Pastikan tidak minus
-        result_message := 'Pembayaran berhasil! Invoice telah LUNAS.';
-    ELSE
-        new_status := 'partially_paid';
-        result_message := 'Pembayaran cicilan berhasil. Sisa tagihan: Rp ' || 
-                         TO_CHAR(new_remaining_amount, 'FM999,999,999');
-    END IF;
-
-    -- Buat entri riwayat pembayaran baru
-    new_history_entry := jsonb_build_object(
-        'amount', p_payment_amount,
-        'date', NOW(),
-        'admin', p_admin_name,
-        'method', p_payment_method,
-        'note', p_note,
-        'remaining_after_payment', new_remaining_amount
-    );
-
-    -- Gabungkan dengan riwayat yang sudah ada
-    current_history := COALESCE(current_invoice.payment_history, '[]'::jsonb);
-    current_history := current_history || new_history_entry;
-
-    -- Update invoice di database
-    UPDATE public.invoices
-    SET 
-        amount = new_remaining_amount,           -- Sisa tagihan
-        amount_paid = new_amount_paid,           -- Total terbayar
-        status = new_status::invoice_status,     -- Status baru
-        payment_history = current_history,       -- Riwayat lengkap
-        last_payment_date = NOW(),               -- Tanggal pembayaran terakhir
-        payment_method = p_payment_method,       -- <-- PERBAIKAN DI SINI
-        paid_at = CASE 
-            WHEN new_status = 'paid' THEN NOW() 
-            ELSE paid_at 
-        END
-    WHERE id = p_invoice_id;
-
-    -- Return hasil sukses
-    RETURN jsonb_build_object(
-        'success', true,
-        'message', result_message,
-        'data', jsonb_build_object(
-            'invoice_id', p_invoice_id,
-            'payment_amount', p_payment_amount,
-            'total_paid', new_amount_paid,
-            'remaining_amount', new_remaining_amount,
-            'new_status', new_status,
-            'invoice_period', current_invoice.invoice_period
-        )
-    );
-
-EXCEPTION
-    WHEN OTHERS THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'message', 'Error: ' || SQLERRM
-        );
+    INSERT INTO public.notifications (title, body, recipient_role, url)
+    VALUES ('Admin Login', admin_name || ' telah login ke sistem.', 'ADMIN', '/dashboard.html');
+    RETURN jsonb_build_object('success', true);
 END;
 $$;
 
-
-ALTER FUNCTION public.process_installment_payment(p_invoice_id uuid, p_payment_amount numeric, p_admin_name text, p_payment_method text, p_note text) OWNER TO postgres;
-
---
--- Name: send_admin_login_notification(text); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.send_admin_login_notification(admin_name text) RETURNS jsonb
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    notification_id TEXT;
-    notification_data JSONB;
+CREATE OR REPLACE FUNCTION public.send_customer_added_notification(admin_name TEXT, customer_name TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
 BEGIN
-    -- Prepare notification data
-    notification_data := jsonb_build_object(
-        'admin_name', admin_name,
-        'login_time', NOW()
-    );
-
-    -- Broadcast ke semua admin
-    notification_id := broadcast_to_all_admins(
-        'admin_login',
-        '🔐 Admin Login',
-        admin_name || ' telah login ke sistem.',
-        notification_data,
-        '/dashboard.html'
-    );
-
-    RETURN jsonb_build_object(
-        'success', true,
-        'message', 'Admin login notification sent successfully',
-        'notification_id', notification_id
-    );
-EXCEPTION
-    WHEN OTHERS THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'message', 'Error: ' || SQLERRM
-        );
+    INSERT INTO public.notifications (title, body, recipient_role, url)
+    VALUES ('Pelanggan Baru', customer_name || ' berhasil ditambahkan oleh ' || admin_name || '.', 'ADMIN', '/pelanggan.html');
+    RETURN jsonb_build_object('success', true);
 END;
 $$;
 
-
-ALTER FUNCTION public.send_admin_login_notification(admin_name text) OWNER TO postgres;
-
---
--- Name: send_customer_added_notification(text, text); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.send_customer_added_notification(admin_name text, customer_name text) RETURNS jsonb
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    notification_id TEXT;
-    notification_data JSONB;
+CREATE OR REPLACE FUNCTION public.send_invoice_creation_notification(admin_name TEXT, invoice_count INTEGER, period TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
 BEGIN
-    -- Prepare notification data
-    notification_data := jsonb_build_object(
-        'admin_name', admin_name,
-        'customer_name', customer_name
-    );
-
-    -- Broadcast ke semua admin
-    notification_id := broadcast_to_all_admins(
-        'customer_added',
-        '👥 Pelanggan Baru Ditambahkan',
-        admin_name || ' telah menambahkan pelanggan baru: ' || customer_name || '.',
-        notification_data,
-        '/pelanggan.html'
-    );
-
-    RETURN jsonb_build_object(
-        'success', true,
-        'message', 'Customer added notification sent successfully',
-        'notification_id', notification_id
-    );
-EXCEPTION
-    WHEN OTHERS THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'message', 'Error: ' || SQLERRM
-        );
+    INSERT INTO public.notifications (title, body, recipient_role, url)
+    VALUES ('Tagihan Dibuat', invoice_count || ' tagihan baru periode ' || period || ' berhasil dibuat oleh ' || admin_name || '.', 'ADMIN', '/tagihan.html');
+    RETURN jsonb_build_object('success', true);
 END;
 $$;
 
-
-ALTER FUNCTION public.send_customer_added_notification(admin_name text, customer_name text) OWNER TO postgres;
-
---
--- Name: send_invoice_creation_notification(text, integer, text); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.send_invoice_creation_notification(admin_name text, invoice_count integer, period text) RETURNS jsonb
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    notification_id TEXT;
-    notification_data JSONB;
+CREATE OR REPLACE FUNCTION public.send_payment_notification(
+    customer_name TEXT,
+    customer_idpl TEXT,
+    invoice_period TEXT,
+    amount NUMERIC,
+    admin_name TEXT,
+    customer_id UUID DEFAULT NULL,
+    invoice_id UUID DEFAULT NULL
+) RETURNS JSONB
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
 BEGIN
-    -- Prepare notification data
-    notification_data := jsonb_build_object(
-        'admin_name', admin_name,
-        'invoice_count', invoice_count,
-        'period', period
-    );
-
-    -- Broadcast ke semua admin
-    notification_id := broadcast_to_all_admins(
-        'invoice_created',
-        '📄 Tagihan Bulanan Dibuat',
-        admin_name || ' telah membuat ' || invoice_count || ' tagihan untuk periode ' || period || '.',
-        notification_data,
-        '/tagihan.html'
-    );
-
-    RETURN jsonb_build_object(
-        'success', true,
-        'message', 'Invoice creation notification sent successfully',
-        'notification_id', notification_id
-    );
-EXCEPTION
-    WHEN OTHERS THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'message', 'Error: ' || SQLERRM
-        );
+    PERFORM public.add_payment_notification(customer_name, customer_idpl, invoice_period, amount, admin_name);
+    RETURN jsonb_build_object('success', true);
 END;
 $$;
 
-
-ALTER FUNCTION public.send_invoice_creation_notification(admin_name text, invoice_count integer, period text) OWNER TO postgres;
-
---
--- Name: send_payment_notification(text, text, text, numeric, text, uuid, uuid); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.send_payment_notification(customer_name text, customer_idpl text, invoice_period text, amount numeric, admin_name text, customer_id uuid DEFAULT NULL::uuid, invoice_id uuid DEFAULT NULL::uuid) RETURNS jsonb
-    LANGUAGE plpgsql SECURITY DEFINER
-    AS $$
-DECLARE
-    notification_id TEXT;
-    formatted_amount TEXT;
-    notification_data JSONB;
+CREATE OR REPLACE FUNCTION public.log_admin_activity(
+    admin_id UUID,
+    action TEXT,
+    description TEXT,
+    additional_data JSONB DEFAULT '{}'::jsonb,
+    activity_timestamp TIMESTAMPTZ DEFAULT NOW()
+) RETURNS VOID
+LANGUAGE plpgsql SECURITY DEFINER
+AS $$
 BEGIN
-    -- Validasi input
-    IF customer_name IS NULL OR customer_name = '' THEN
-        RETURN '{"success": false, "message": "Customer name cannot be empty"}'::JSONB;
-    END IF;
-
-    IF amount IS NULL OR amount <= 0 THEN
-        RETURN '{"success": false, "message": "Amount must be greater than 0"}'::JSONB;
-    END IF;
-
-    -- Format amount ke Rupiah
-    formatted_amount := 'Rp ' || to_char(amount, 'FM999,999,999');
-
-    -- Prepare notification data
-    notification_data := jsonb_build_object(
-        'customer_name', customer_name,
-        'customer_idpl', customer_idpl,
-        'invoice_period', invoice_period,
-        'amount', amount,
-        'admin_name', admin_name,
-        'customer_id', customer_id,
-        'invoice_id', invoice_id
-    );
-
-    -- Broadcast ke semua admin
-    notification_id := broadcast_to_all_admins(
-        'payment_processed',
-        '💰 Pembayaran Lunas Diterima',
-        'Dari ' || customer_name || ' (' || customer_idpl || ') sebesar ' || formatted_amount || ' untuk periode ' || invoice_period || '. Diproses oleh ' || admin_name || '.',
-        notification_data,
-        '/tagihan.html?status=paid'
-    );
-
-    RETURN jsonb_build_object(
-        'success', true,
-        'message', 'Payment notification sent successfully',
-        'notification_id', notification_id
-    );
-EXCEPTION
-    WHEN OTHERS THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'message', 'Error: ' || SQLERRM
-        );
+    INSERT INTO public.notifications (title, body, recipient_role, type, data, created_at)
+    VALUES (action, description, 'ADMIN', 'activity_log', additional_data, activity_timestamp);
 END;
 $$;
 
-
-ALTER FUNCTION public.send_payment_notification(customer_name text, customer_idpl text, invoice_period text, amount numeric, admin_name text, customer_id uuid, invoice_id uuid) OWNER TO postgres;
-
---
--- Name: update_genieacs_settings_updated_at(); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.update_genieacs_settings_updated_at() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$;
-
-
-ALTER FUNCTION public.update_genieacs_settings_updated_at() OWNER TO postgres;
-
---
--- Name: update_updated_at_column(); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.update_updated_at_column() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$;
-
-
-ALTER FUNCTION public.update_updated_at_column() OWNER TO postgres;
-
---
--- Name: update_whatsapp_settings_updated_at(); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.update_whatsapp_settings_updated_at() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$;
-
-
-ALTER FUNCTION public.update_whatsapp_settings_updated_at() OWNER TO postgres;
-
-SET default_tablespace = '';
-
-SET default_table_access_method = heap;
-
---
--- Name: app_settings; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.app_settings (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    app_name text,
-    app_short_name text,
-    app_description text,
-    app_tagline text,
-    logo_url text,
-    favicon_url text,
-    icon_192_url text,
-    icon_512_url text,
-    whatsapp_number text,
-    support_email text,
-    office_address text,
-    offline_payment_name text,
-    offline_payment_address text,
-    qris_image_url text,
-    show_qris boolean DEFAULT true,
-    theme_color text,
-    background_color text,
-    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
-);
-
-
-ALTER TABLE public.app_settings OWNER TO postgres;
-
---
--- Name: expenses; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.expenses (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    description text NOT NULL,
-    amount numeric NOT NULL,
-    expense_date date NOT NULL,
-    created_at timestamp with time zone DEFAULT now()
-);
-
-
-ALTER TABLE public.expenses OWNER TO postgres;
-
---
--- Name: genieacs_settings; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.genieacs_settings (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    setting_key text NOT NULL,
-    setting_value text,
-    is_enabled boolean DEFAULT false,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
-);
-
-
-ALTER TABLE public.genieacs_settings OWNER TO postgres;
-
---
--- Name: TABLE genieacs_settings; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON TABLE public.genieacs_settings IS 'GenieACS configuration settings';
-
-
---
--- Name: invoices; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.invoices (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    customer_id uuid NOT NULL,
-    package_id integer,
-    invoice_period text NOT NULL,
-    amount numeric NOT NULL,
-    status public.invoice_status DEFAULT 'unpaid'::public.invoice_status NOT NULL,
-    due_date date,
-    paid_at timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now(),
-    total_due numeric,
-    amount_paid numeric DEFAULT 0,
-    payment_history jsonb DEFAULT '[]'::jsonb,
-    last_payment_date timestamp with time zone,
-    payment_method text DEFAULT 'cash'::text
-);
-
-
-ALTER TABLE public.invoices OWNER TO postgres;
-
---
--- Name: COLUMN invoices.customer_id; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON COLUMN public.invoices.customer_id IS 'Merujuk ke pelanggan di tabel profiles.';
-
-
---
--- Name: COLUMN invoices.package_id; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON COLUMN public.invoices.package_id IS 'Merujuk ke paket yang ditagihkan.';
-
-
---
--- Name: COLUMN invoices.invoice_period; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON COLUMN public.invoices.invoice_period IS 'Periode tagihan, misal: "September 2025".';
-
-
---
--- Name: COLUMN invoices.paid_at; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON COLUMN public.invoices.paid_at IS 'Waktu ketika tagihan dibayar.';
-
-
---
--- Name: notification_reads; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.notification_reads (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    notification_id uuid NOT NULL,
-    user_id uuid NOT NULL,
-    read_at timestamp with time zone DEFAULT now()
-);
-
-
-ALTER TABLE public.notification_reads OWNER TO postgres;
-
---
--- Name: notifications; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.notifications (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    title text NOT NULL,
-    body text NOT NULL,
-    recipient_role text,
-    recipient_user_id uuid,
-    url text,
-    created_at timestamp with time zone DEFAULT now(),
-    type text,
-    data jsonb DEFAULT '{}'::jsonb,
-    updated_at timestamp with time zone DEFAULT now()
-);
-
-
-ALTER TABLE public.notifications OWNER TO postgres;
-
---
--- Name: packages; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.packages (
-    id integer NOT NULL,
-    package_name text NOT NULL,
-    price numeric NOT NULL,
-    speed_mbps integer,
-    description text,
-    created_at timestamp with time zone DEFAULT now()
-);
-
-
-ALTER TABLE public.packages OWNER TO postgres;
-
---
--- Name: packages_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.packages_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public.packages_id_seq OWNER TO postgres;
-
---
--- Name: packages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.packages_id_seq OWNED BY public.packages.id;
-
-
---
--- Name: payment_methods; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.payment_methods (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    bank_name text NOT NULL,
-    account_number text NOT NULL,
-    account_holder text NOT NULL,
-    sort_order integer DEFAULT 0,
-    is_active boolean DEFAULT true,
-    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
-);
-
-
-ALTER TABLE public.payment_methods OWNER TO postgres;
-
---
--- Name: profiles; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.profiles (
-    id uuid NOT NULL,
-    idpl text,
-    full_name text,
-    address text,
-    gender text,
-    whatsapp_number text,
-    role text DEFAULT 'USER'::text NOT NULL,
-    photo_url text,
-    status public.customer_status DEFAULT 'AKTIF'::public.customer_status,
-    installation_date date,
-    device_type text,
-    ip_static_pppoe text,
-    created_at timestamp with time zone DEFAULT now(),
-    churn_date date,
-    package_id integer,
-    latitude numeric,
-    longitude numeric
-);
-
-
-ALTER TABLE public.profiles OWNER TO postgres;
-
---
--- Name: COLUMN profiles.latitude; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON COLUMN public.profiles.latitude IS 'Koordinat latitude lokasi pelanggan (opsional)';
-
-
---
--- Name: COLUMN profiles.longitude; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON COLUMN public.profiles.longitude IS 'Koordinat longitude lokasi pelanggan (opsional)';
-
-
---
--- Name: whatsapp_settings; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.whatsapp_settings (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    setting_key text NOT NULL,
-    setting_value text,
-    is_enabled boolean DEFAULT true,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
-);
-
-
-ALTER TABLE public.whatsapp_settings OWNER TO postgres;
-
---
--- Name: TABLE whatsapp_settings; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON TABLE public.whatsapp_settings IS 'Stores WhatsApp notification templates and settings';
-
-
---
--- Name: COLUMN whatsapp_settings.setting_key; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON COLUMN public.whatsapp_settings.setting_key IS 'Unique key for the setting';
-
-
---
--- Name: COLUMN whatsapp_settings.setting_value; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON COLUMN public.whatsapp_settings.setting_value IS 'Template or setting value';
-
-
---
--- Name: COLUMN whatsapp_settings.is_enabled; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON COLUMN public.whatsapp_settings.is_enabled IS 'Whether this setting/template is enabled';
-
-
---
--- Name: wifi_change_logs; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.wifi_change_logs (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    customer_id uuid NOT NULL,
-    ip_address text NOT NULL,
-    old_ssid text,
-    new_ssid text,
-    changed_at timestamp with time zone DEFAULT now(),
-    status text DEFAULT 'pending'::text,
-    error_message text
-);
-
-
-ALTER TABLE public.wifi_change_logs OWNER TO postgres;
-
---
--- Name: TABLE wifi_change_logs; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON TABLE public.wifi_change_logs IS 'History of WiFi SSID/Password changes';
-
-
---
--- Name: COLUMN wifi_change_logs.ip_address; Type: COMMENT; Schema: public; Owner: postgres
---
-
-COMMENT ON COLUMN public.wifi_change_logs.ip_address IS 'Device IP address from profiles.ip_static_pppoe';
-
-
---
--- Name: packages id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.packages ALTER COLUMN id SET DEFAULT nextval('public.packages_id_seq'::regclass);
-
-
---
--- Name: app_settings app_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.app_settings
-    ADD CONSTRAINT app_settings_pkey PRIMARY KEY (id);
-
-
---
--- Name: expenses expenses_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.expenses
-    ADD CONSTRAINT expenses_pkey PRIMARY KEY (id);
-
-
---
--- Name: genieacs_settings genieacs_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.genieacs_settings
-    ADD CONSTRAINT genieacs_settings_pkey PRIMARY KEY (id);
-
-
---
--- Name: genieacs_settings genieacs_settings_setting_key_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.genieacs_settings
-    ADD CONSTRAINT genieacs_settings_setting_key_key UNIQUE (setting_key);
-
-
---
--- Name: invoices invoices_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.invoices
-    ADD CONSTRAINT invoices_pkey PRIMARY KEY (id);
-
-
---
--- Name: notification_reads notification_reads_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.notification_reads
-    ADD CONSTRAINT notification_reads_pkey PRIMARY KEY (id);
-
-
---
--- Name: notification_reads notification_reads_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.notification_reads
-    ADD CONSTRAINT notification_reads_unique UNIQUE (notification_id, user_id);
-
-
---
--- Name: notifications notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.notifications
-    ADD CONSTRAINT notifications_pkey PRIMARY KEY (id);
-
-
---
--- Name: packages packages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.packages
-    ADD CONSTRAINT packages_pkey PRIMARY KEY (id);
-
-
---
--- Name: payment_methods payment_methods_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.payment_methods
-    ADD CONSTRAINT payment_methods_pkey PRIMARY KEY (id);
-
-
---
--- Name: profiles profiles_idpl_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.profiles
-    ADD CONSTRAINT profiles_idpl_key UNIQUE (idpl);
-
-
---
--- Name: profiles profiles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.profiles
-    ADD CONSTRAINT profiles_pkey PRIMARY KEY (id);
-
-
---
--- Name: whatsapp_settings whatsapp_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.whatsapp_settings
-    ADD CONSTRAINT whatsapp_settings_pkey PRIMARY KEY (id);
-
-
---
--- Name: whatsapp_settings whatsapp_settings_setting_key_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.whatsapp_settings
-    ADD CONSTRAINT whatsapp_settings_setting_key_key UNIQUE (setting_key);
-
-
---
--- Name: wifi_change_logs wifi_change_logs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.wifi_change_logs
-    ADD CONSTRAINT wifi_change_logs_pkey PRIMARY KEY (id);
-
-
---
--- Name: idx_app_settings_updated_at; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_app_settings_updated_at ON public.app_settings USING btree (updated_at DESC);
-
-
---
--- Name: idx_notification_reads_composite; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_notification_reads_composite ON public.notification_reads USING btree (notification_id, user_id);
-
-
---
--- Name: idx_notification_reads_notification_id; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_notification_reads_notification_id ON public.notification_reads USING btree (notification_id);
-
-
---
--- Name: idx_notification_reads_user_id; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_notification_reads_user_id ON public.notification_reads USING btree (user_id);
-
-
---
--- Name: idx_notifications_created_at; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_notifications_created_at ON public.notifications USING btree (created_at DESC);
-
-
---
--- Name: idx_notifications_recipient_role; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_notifications_recipient_role ON public.notifications USING btree (recipient_role);
-
-
---
--- Name: idx_notifications_recipient_user_id; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_notifications_recipient_user_id ON public.notifications USING btree (recipient_user_id);
-
-
---
--- Name: idx_notifications_role_created; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_notifications_role_created ON public.notifications USING btree (recipient_role, created_at DESC);
-
-
---
--- Name: idx_notifications_type; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_notifications_type ON public.notifications USING btree (type);
-
-
---
--- Name: idx_payment_methods_active; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_payment_methods_active ON public.payment_methods USING btree (is_active, sort_order);
-
-
---
--- Name: idx_payment_methods_sort; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_payment_methods_sort ON public.payment_methods USING btree (sort_order);
-
-
---
--- Name: idx_profiles_role; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_profiles_role ON public.profiles USING btree (role);
-
-
---
--- Name: genieacs_settings genieacs_settings_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
---
-
-CREATE TRIGGER genieacs_settings_updated_at BEFORE UPDATE ON public.genieacs_settings FOR EACH ROW EXECUTE FUNCTION public.update_genieacs_settings_updated_at();
-
-
---
--- Name: notifications update_notifications_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
---
-
-CREATE TRIGGER update_notifications_updated_at BEFORE UPDATE ON public.notifications FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-
---
--- Name: whatsapp_settings whatsapp_settings_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
---
-
-CREATE TRIGGER whatsapp_settings_updated_at BEFORE UPDATE ON public.whatsapp_settings FOR EACH ROW EXECUTE FUNCTION public.update_whatsapp_settings_updated_at();
-
-
---
--- Name: invoices invoices_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.invoices
-    ADD CONSTRAINT invoices_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
-
-
---
--- Name: invoices invoices_package_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.invoices
-    ADD CONSTRAINT invoices_package_id_fkey FOREIGN KEY (package_id) REFERENCES public.packages(id) ON DELETE SET NULL;
-
-
---
--- Name: notification_reads notification_reads_notification_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.notification_reads
-    ADD CONSTRAINT notification_reads_notification_id_fkey FOREIGN KEY (notification_id) REFERENCES public.notifications(id) ON DELETE CASCADE;
-
-
---
--- Name: notification_reads notification_reads_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.notification_reads
-    ADD CONSTRAINT notification_reads_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
-
-
---
--- Name: notifications notifications_recipient_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.notifications
-    ADD CONSTRAINT notifications_recipient_user_id_fkey FOREIGN KEY (recipient_user_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
-
-
---
--- Name: profiles profiles_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.profiles
-    ADD CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
-
-
---
--- Name: profiles profiles_package_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.profiles
-    ADD CONSTRAINT profiles_package_id_fkey FOREIGN KEY (package_id) REFERENCES public.packages(id);
-
-
---
--- Name: wifi_change_logs wifi_change_logs_customer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.wifi_change_logs
-    ADD CONSTRAINT wifi_change_logs_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
-
-
---
--- Name: profiles Admin bisa melihat semua profil; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Admin bisa melihat semua profil" ON public.profiles FOR SELECT TO authenticated USING ((public.get_user_role(auth.uid()) = 'ADMIN'::text));
-
-
---
--- Name: profiles Admin bisa mengupdate semua profil; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Admin bisa mengupdate semua profil" ON public.profiles FOR UPDATE USING ((public.get_user_role(auth.uid()) = 'ADMIN'::text));
-
-
---
--- Name: expenses Admin memiliki akses penuh ke pengeluaran; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Admin memiliki akses penuh ke pengeluaran" ON public.expenses USING ((( SELECT profiles.role
-   FROM public.profiles
-  WHERE (profiles.id = auth.uid())) = 'ADMIN'::text)) WITH CHECK ((( SELECT profiles.role
-   FROM public.profiles
-  WHERE (profiles.id = auth.uid())) = 'ADMIN'::text));
-
-
---
--- Name: invoices Admin memiliki akses penuh ke semua tagihan; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Admin memiliki akses penuh ke semua tagihan" ON public.invoices USING ((( SELECT profiles.role
-   FROM public.profiles
-  WHERE (profiles.id = auth.uid())) = 'ADMIN'::text)) WITH CHECK ((( SELECT profiles.role
-   FROM public.profiles
-  WHERE (profiles.id = auth.uid())) = 'ADMIN'::text));
-
-
---
--- Name: notifications Admins can delete notifications; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Admins can delete notifications" ON public.notifications FOR DELETE USING ((( SELECT profiles.role
-   FROM public.profiles
-  WHERE (profiles.id = auth.uid())) = 'ADMIN'::text));
-
-
---
--- Name: notifications Admins can update notifications; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Admins can update notifications" ON public.notifications FOR UPDATE USING ((( SELECT profiles.role
-   FROM public.profiles
-  WHERE (profiles.id = auth.uid())) = 'ADMIN'::text));
-
-
---
--- Name: wifi_change_logs Admins can view all WiFi change logs; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Admins can view all WiFi change logs" ON public.wifi_change_logs FOR SELECT TO authenticated USING ((EXISTS ( SELECT 1
-   FROM public.profiles
-  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::text)))));
-
-
---
--- Name: whatsapp_settings Allow authenticated users to read whatsapp_settings; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Allow authenticated users to read whatsapp_settings" ON public.whatsapp_settings FOR SELECT TO authenticated USING (true);
-
-
---
--- Name: whatsapp_settings Allow authenticated users to update whatsapp_settings; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Allow authenticated users to update whatsapp_settings" ON public.whatsapp_settings FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-
-
---
--- Name: whatsapp_settings Allow authenticated users to insert whatsapp_settings; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Allow authenticated users to insert whatsapp_settings" ON public.whatsapp_settings FOR INSERT TO authenticated WITH CHECK (true);
-
-
---
--- Name: payment_methods Anyone can read active payment methods; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Anyone can read active payment methods" ON public.payment_methods FOR SELECT USING ((is_active = true));
-
-
---
--- Name: app_settings Anyone can read app settings; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Anyone can read app settings" ON public.app_settings FOR SELECT USING (true);
-
-
---
--- Name: payment_methods Authenticated users can delete payment methods; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Authenticated users can delete payment methods" ON public.payment_methods FOR DELETE USING ((auth.role() = 'authenticated'::text));
-
-
---
--- Name: app_settings Authenticated users can insert app settings; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Authenticated users can insert app settings" ON public.app_settings FOR INSERT WITH CHECK ((auth.role() = 'authenticated'::text));
-
-
---
--- Name: payment_methods Authenticated users can insert payment methods; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Authenticated users can insert payment methods" ON public.payment_methods FOR INSERT WITH CHECK ((auth.role() = 'authenticated'::text));
-
-
---
--- Name: payment_methods Authenticated users can read all payment methods; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Authenticated users can read all payment methods" ON public.payment_methods FOR SELECT USING ((auth.role() = 'authenticated'::text));
-
-
---
--- Name: app_settings Authenticated users can update app settings; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Authenticated users can update app settings" ON public.app_settings FOR UPDATE USING ((auth.role() = 'authenticated'::text));
-
-
---
--- Name: payment_methods Authenticated users can update payment methods; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Authenticated users can update payment methods" ON public.payment_methods FOR UPDATE USING ((auth.role() = 'authenticated'::text));
-
-
---
--- Name: packages Hanya admin yang bisa memodifikasi paket; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Hanya admin yang bisa memodifikasi paket" ON public.packages USING ((( SELECT profiles.role
-   FROM public.profiles
-  WHERE (profiles.id = auth.uid())) = 'ADMIN'::text)) WITH CHECK ((( SELECT profiles.role
-   FROM public.profiles
-  WHERE (profiles.id = auth.uid())) = 'ADMIN'::text));
-
-
---
--- Name: profiles Pengguna bisa membuat profil sendiri saat registrasi; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Pengguna bisa membuat profil sendiri saat registrasi" ON public.profiles FOR INSERT TO authenticated WITH CHECK ((auth.uid() = id));
-
-
---
--- Name: profiles Pengguna bisa mengupdate profilnya sendiri; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Pengguna bisa mengupdate profilnya sendiri" ON public.profiles FOR UPDATE USING ((auth.uid() = id));
-
-
---
--- Name: profiles Pengguna hanya bisa melihat profil sendiri; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Pengguna hanya bisa melihat profil sendiri" ON public.profiles FOR SELECT TO authenticated USING ((auth.uid() = id));
-
-
---
--- Name: invoices Pengguna hanya bisa melihat tagihan miliknya; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Pengguna hanya bisa melihat tagihan miliknya" ON public.invoices FOR SELECT USING ((auth.uid() = customer_id));
-
-
---
--- Name: invoices Pengguna hanya bisa melihat tagihan sendiri; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Pengguna hanya bisa melihat tagihan sendiri" ON public.invoices FOR SELECT USING ((auth.uid() = customer_id));
-
-
---
--- Name: profiles Pengguna hanya bisa mengubah profil sendiri; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Pengguna hanya bisa mengubah profil sendiri" ON public.profiles FOR UPDATE USING ((auth.uid() = id));
-
-
---
--- Name: notifications Secure notification insert; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Secure notification insert" ON public.notifications FOR INSERT WITH CHECK (((auth.uid() IS NOT NULL) AND
-CASE
-    WHEN (recipient_role = 'ADMIN'::text) THEN (( SELECT profiles.role
-       FROM public.profiles
-      WHERE (profiles.id = auth.uid())) = 'ADMIN'::text)
-    ELSE true
-END AND
-CASE
-    WHEN (recipient_user_id IS NOT NULL) THEN ((recipient_user_id = auth.uid()) OR (( SELECT profiles.role
-       FROM public.profiles
-      WHERE (profiles.id = auth.uid())) = 'ADMIN'::text))
-    ELSE true
-END));
-
-
---
--- Name: packages Semua pengguna bisa melihat daftar paket; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Semua pengguna bisa melihat daftar paket" ON public.packages FOR SELECT USING ((auth.role() = 'authenticated'::text));
-
-
---
--- Name: notification_reads Users can delete their own read status; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can delete their own read status" ON public.notification_reads FOR DELETE USING ((user_id = auth.uid()));
-
-
---
--- Name: wifi_change_logs Users can insert their own WiFi change logs; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can insert their own WiFi change logs" ON public.wifi_change_logs FOR INSERT TO authenticated WITH CHECK ((customer_id = auth.uid()));
-
-
---
--- Name: notification_reads Users can insert their own read status; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can insert their own read status" ON public.notification_reads FOR INSERT WITH CHECK ((user_id = auth.uid()));
-
-
---
--- Name: notification_reads Users can update their own read status; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can update their own read status" ON public.notification_reads FOR UPDATE USING ((user_id = auth.uid()));
-
-
---
--- Name: notifications Users can view relevant notifications; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can view relevant notifications" ON public.notifications FOR SELECT USING ((((recipient_role IS NULL) AND (recipient_user_id IS NULL)) OR (recipient_role = ( SELECT profiles.role
-   FROM public.profiles
-  WHERE (profiles.id = auth.uid()))) OR (recipient_user_id = auth.uid())));
-
-
---
--- Name: wifi_change_logs Users can view their own WiFi change logs; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can view their own WiFi change logs" ON public.wifi_change_logs FOR SELECT TO authenticated USING ((customer_id = auth.uid()));
-
-
---
--- Name: notification_reads Users can view their own read status; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can view their own read status" ON public.notification_reads FOR SELECT USING ((user_id = auth.uid()));
-
-
---
--- Name: genieacs_settings allow_all_for_authenticated; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY allow_all_for_authenticated ON public.genieacs_settings TO authenticated USING (true) WITH CHECK (true);
-
-
---
--- Name: app_settings; Type: ROW SECURITY; Schema: public; Owner: postgres
---
-
-ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
-
---
--- Name: expenses; Type: ROW SECURITY; Schema: public; Owner: postgres
---
-
-ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
-
---
--- Name: genieacs_settings; Type: ROW SECURITY; Schema: public; Owner: postgres
---
-
-ALTER TABLE public.genieacs_settings ENABLE ROW LEVEL SECURITY;
-
---
--- Name: invoices; Type: ROW SECURITY; Schema: public; Owner: postgres
---
-
-ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
-
---
--- Name: notification_reads; Type: ROW SECURITY; Schema: public; Owner: postgres
---
-
-ALTER TABLE public.notification_reads ENABLE ROW LEVEL SECURITY;
-
---
--- Name: notifications; Type: ROW SECURITY; Schema: public; Owner: postgres
---
-
-ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
-
---
--- Name: packages; Type: ROW SECURITY; Schema: public; Owner: postgres
---
-
+-- ------------------------------------------------------------------------------
+-- 6. TRIGGERS
+-- ------------------------------------------------------------------------------
+
+-- Trigger registrasi user baru di auth.users -> public.profiles
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_new_user();
+
+-- Trigger update timestamp pada tabel-tabel konfigurasi
+DROP TRIGGER IF EXISTS app_settings_updated_at ON public.app_settings;
+CREATE TRIGGER app_settings_updated_at
+    BEFORE UPDATE ON public.app_settings
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS payment_methods_updated_at ON public.payment_methods;
+CREATE TRIGGER payment_methods_updated_at
+    BEFORE UPDATE ON public.payment_methods
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS whatsapp_settings_updated_at ON public.whatsapp_settings;
+CREATE TRIGGER whatsapp_settings_updated_at
+    BEFORE UPDATE ON public.whatsapp_settings
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_whatsapp_settings_updated_at();
+
+DROP TRIGGER IF EXISTS genieacs_settings_updated_at ON public.genieacs_settings;
+CREATE TRIGGER genieacs_settings_updated_at
+    BEFORE UPDATE ON public.genieacs_settings
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_genieacs_settings_updated_at();
+
+-- ------------------------------------------------------------------------------
+-- 7. SUPABASE STORAGE BUCKET & POLICIES ('avatars')
+-- ------------------------------------------------------------------------------
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'avatars',
+    'avatars',
+    TRUE,
+    5242880, -- 5 MB
+    ARRAY['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
+)
+ON CONFLICT (id) DO UPDATE SET public = TRUE;
+
+-- Storage Policies
+DROP POLICY IF EXISTS "Avatar Public Access" ON storage.objects;
+CREATE POLICY "Avatar Public Access"
+    ON storage.objects FOR SELECT
+    USING (bucket_id = 'avatars');
+
+DROP POLICY IF EXISTS "Authenticated User Upload Avatar" ON storage.objects;
+CREATE POLICY "Authenticated User Upload Avatar"
+    ON storage.objects FOR INSERT
+    TO authenticated
+    WITH CHECK (bucket_id = 'avatars');
+
+DROP POLICY IF EXISTS "Authenticated User Update Avatar" ON storage.objects;
+CREATE POLICY "Authenticated User Update Avatar"
+    ON storage.objects FOR UPDATE
+    TO authenticated
+    USING (bucket_id = 'avatars');
+
+DROP POLICY IF EXISTS "Authenticated User Delete Avatar" ON storage.objects;
+CREATE POLICY "Authenticated User Delete Avatar"
+    ON storage.objects FOR DELETE
+    TO authenticated
+    USING (bucket_id = 'avatars');
+
+-- ------------------------------------------------------------------------------
+-- 8. DATA AWAL / INITIAL SEED DATA (Idempotent)
+-- ------------------------------------------------------------------------------
+
+-- 8.1. Default Packages
+INSERT INTO public.packages (id, package_name, price, speed_mbps, description) VALUES
+(1, 'Paket Hemat 10 Mbps', 100000, 10, 'Akses internet stabil untuk kebutuhan browsing & streaming ringan'),
+(2, 'Paket Super 20 Mbps', 150000, 20, 'Cocok untuk kebutuhan keluarga, belajar & bekerja dari rumah'),
+(3, 'Paket Ultra 50 Mbps', 250000, 50, 'Kecepatan tinggi untuk streaming 4K, gaming & multi device')
+ON CONFLICT (id) DO NOTHING;
+SELECT setval('public.packages_id_seq', (SELECT COALESCE(MAX(id), 1) FROM public.packages));
+
+-- 8.2. Default App Settings
+INSERT INTO public.app_settings (
+    id, app_name, app_short_name, app_tagline, app_description,
+    whatsapp_number, support_email, office_address,
+    offline_payment_name, offline_payment_address, show_qris,
+    theme_color, background_color
+) VALUES (
+    '00000000-0000-0000-0000-000000000001',
+    'REVAM NET',
+    'REVAM',
+    'Internet Cepat & Tanpa Batas',
+    'Sistem Manajemen Tagihan & Layanan Pelanggan Internet WiFi',
+    '081234567890',
+    'support@revamnet.com',
+    'Jl. Telekomunikasi No. 1, Indonesia',
+    'Kasir Kantor REVAM NET',
+    'Loket Pembayaran Utama REVAM NET',
+    TRUE,
+    '#683fe4',
+    '#f9f8fc'
+) ON CONFLICT (id) DO NOTHING;
+
+-- 8.3. Default Payment Methods
+INSERT INTO public.payment_methods (bank_name, account_number, account_holder, sort_order, is_active) VALUES
+('TUNAI (CASH)', 'LOKET-KASIR', 'KASIR REVAM NET', 1, TRUE),
+('BANK BCA', '1234567890', 'REVAM NET BILLING', 2, TRUE),
+('BANK BRI', '098765432112345', 'REVAM NET BILLING', 3, TRUE),
+('DANA / OVO / GOPAY', '081234567890', 'REVAM NET', 4, TRUE)
+ON CONFLICT DO NOTHING;
+
+-- 8.4. Default WhatsApp Settings & Templates
+INSERT INTO public.whatsapp_settings (setting_key, setting_value, is_enabled) VALUES
+('auto_notification_enabled', 'true', TRUE),
+('fonnte_token', '', TRUE),
+('app_url', 'http://localhost/project-billing', TRUE),
+('default_admin_phone', '081234567890', TRUE),
+('auto_send_manual_payment', 'true', TRUE),
+('send_on_invoice_created', 'true', TRUE),
+('template_custom_message',
+'Informasi Tagihan WiFi Anda
+
+Hai Bapak/Ibu {nama_pelanggan},
+ID Pelanggan: {idpl}
+
+Informasi tagihan Bapak/Ibu bulan ini adalah:
+Jumlah Tagihan: {total_tagihan}
+Periode Tagihan: {periode}
+
+Metode Pembayaran:
+{metode_pembayaran}
+
+Terima kasih atas kepercayaan Anda menggunakan layanan kami.
+_____________________________
+*Ini adalah pesan otomatis. Jika telah membayar tagihan, abaikan pesan ini.*',
+TRUE),
+('template_payment_full',
+'Konfirmasi Pembayaran LUNAS
+
+Hai Bapak/Ibu {nama_pelanggan},
+ID Pelanggan: {idpl}
+
+✅ *TAGIHAN TELAH LUNAS!*
+
+*Detail Pembayaran:*
+• Periode: *{periode}*
+• Total Tagihan: *{total_tagihan}*
+• Metode: {metode_pembayaran}
+• Status: *LUNAS*
+
+Terima kasih atas pembayaran Anda.
+_____________________________
+*Pesan otomatis dari REVAM NET*',
+TRUE),
+('template_payment_installment',
+'Konfirmasi Pembayaran Cicilan
+
+Hai Bapak/Ibu {nama_pelanggan},
+ID Pelanggan: {idpl}
+
+✅ *Pembayaran cicilan diterima!*
+
+*Detail Pembayaran:*
+• Periode: *{periode}*
+• Jumlah Dibayar: *{jumlah_dibayar}*
+• Metode: {metode_pembayaran}
+• Sisa Tagihan: *{sisa_tagihan}*
+
+Terima kasih atas pembayaran Anda.
+_____________________________
+*Pesan otomatis dari REVAM NET*',
+TRUE)
+ON CONFLICT (setting_key) DO UPDATE SET
+    is_enabled = EXCLUDED.is_enabled;
+
+-- 8.5. Default GenieACS Settings
+INSERT INTO public.genieacs_settings (setting_key, setting_value, is_enabled) VALUES
+('genieacs_enabled', 'false', FALSE),
+('genieacs_url', 'http://acs.bayardong.my.id', TRUE),
+('genieacs_username', '', TRUE),
+('genieacs_password', '', TRUE)
+ON CONFLICT (setting_key) DO NOTHING;
+
+-- ------------------------------------------------------------------------------
+-- 9. ROW LEVEL SECURITY (RLS) & POLICIES MENYELURUH
+-- ------------------------------------------------------------------------------
+
+-- Aktifkan RLS di seluruh tabel
 ALTER TABLE public.packages ENABLE ROW LEVEL SECURITY;
-
---
--- Name: payment_methods; Type: ROW SECURITY; Schema: public; Owner: postgres
---
-
-ALTER TABLE public.payment_methods ENABLE ROW LEVEL SECURITY;
-
---
--- Name: profiles; Type: ROW SECURITY; Schema: public; Owner: postgres
---
-
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-
---
--- Name: whatsapp_settings; Type: ROW SECURITY; Schema: public; Owner: postgres
---
-
+ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notification_reads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payment_methods ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.whatsapp_settings ENABLE ROW LEVEL SECURITY;
-
---
--- Name: wifi_change_logs; Type: ROW SECURITY; Schema: public; Owner: postgres
---
-
+ALTER TABLE public.genieacs_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.wifi_change_logs ENABLE ROW LEVEL SECURITY;
 
---
--- Name: SCHEMA public; Type: ACL; Schema: -; Owner: pg_database_owner
---
-
-GRANT USAGE ON SCHEMA public TO postgres;
-GRANT USAGE ON SCHEMA public TO anon;
-GRANT USAGE ON SCHEMA public TO authenticated;
-GRANT USAGE ON SCHEMA public TO service_role;
-
-
---
--- Name: FUNCTION add_payment_notification(customer_name text, customer_idpl text, invoice_period text, amount numeric, admin_name text); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.add_payment_notification(customer_name text, customer_idpl text, invoice_period text, amount numeric, admin_name text) TO authenticated;
-GRANT ALL ON FUNCTION public.add_payment_notification(customer_name text, customer_idpl text, invoice_period text, amount numeric, admin_name text) TO service_role;
-
-
---
--- Name: FUNCTION broadcast_to_all_admins(notification_type text, title text, message text, data jsonb, url text); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.broadcast_to_all_admins(notification_type text, title text, message text, data jsonb, url text) TO authenticated;
-GRANT ALL ON FUNCTION public.broadcast_to_all_admins(notification_type text, title text, message text, data jsonb, url text) TO service_role;
-
-
---
--- Name: FUNCTION cleanup_old_notifications(days_to_keep integer); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.cleanup_old_notifications(days_to_keep integer) TO authenticated;
-GRANT ALL ON FUNCTION public.cleanup_old_notifications(days_to_keep integer) TO service_role;
-
-
---
--- Name: FUNCTION create_monthly_invoices_v2(); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.create_monthly_invoices_v2() TO anon;
-GRANT ALL ON FUNCTION public.create_monthly_invoices_v2() TO authenticated;
-GRANT ALL ON FUNCTION public.create_monthly_invoices_v2() TO service_role;
-
-
---
--- Name: FUNCTION get_all_customers(p_filter text, p_search_term text); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.get_all_customers(p_filter text, p_search_term text) TO anon;
-GRANT ALL ON FUNCTION public.get_all_customers(p_filter text, p_search_term text) TO authenticated;
-GRANT ALL ON FUNCTION public.get_all_customers(p_filter text, p_search_term text) TO service_role;
-
-
---
--- Name: FUNCTION get_dashboard_charts_data(p_months integer); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.get_dashboard_charts_data(p_months integer) TO anon;
-GRANT ALL ON FUNCTION public.get_dashboard_charts_data(p_months integer) TO authenticated;
-GRANT ALL ON FUNCTION public.get_dashboard_charts_data(p_months integer) TO service_role;
-
-
---
--- Name: FUNCTION get_dashboard_charts_data_alt(p_months integer); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.get_dashboard_charts_data_alt(p_months integer) TO anon;
-GRANT ALL ON FUNCTION public.get_dashboard_charts_data_alt(p_months integer) TO authenticated;
-GRANT ALL ON FUNCTION public.get_dashboard_charts_data_alt(p_months integer) TO service_role;
-
-
---
--- Name: FUNCTION get_dashboard_stats(p_month integer, p_year integer); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.get_dashboard_stats(p_month integer, p_year integer) TO anon;
-GRANT ALL ON FUNCTION public.get_dashboard_stats(p_month integer, p_year integer) TO authenticated;
-GRANT ALL ON FUNCTION public.get_dashboard_stats(p_month integer, p_year integer) TO service_role;
-
-
---
--- Name: FUNCTION get_invoices_with_payment_info(p_status text, p_customer_id uuid); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.get_invoices_with_payment_info(p_status text, p_customer_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.get_invoices_with_payment_info(p_status text, p_customer_id uuid) TO authenticated;
-GRANT ALL ON FUNCTION public.get_invoices_with_payment_info(p_status text, p_customer_id uuid) TO service_role;
-
-
---
--- Name: FUNCTION get_payment_history(p_invoice_id uuid); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.get_payment_history(p_invoice_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.get_payment_history(p_invoice_id uuid) TO authenticated;
-GRANT ALL ON FUNCTION public.get_payment_history(p_invoice_id uuid) TO service_role;
-
-
---
--- Name: FUNCTION get_unread_notification_count(user_id_param uuid); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.get_unread_notification_count(user_id_param uuid) TO anon;
-GRANT ALL ON FUNCTION public.get_unread_notification_count(user_id_param uuid) TO authenticated;
-GRANT ALL ON FUNCTION public.get_unread_notification_count(user_id_param uuid) TO service_role;
-
-
---
--- Name: FUNCTION get_user_email(user_id uuid); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.get_user_email(user_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.get_user_email(user_id uuid) TO authenticated;
-GRANT ALL ON FUNCTION public.get_user_email(user_id uuid) TO service_role;
-
-
---
--- Name: FUNCTION get_user_notifications(user_id_param uuid); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.get_user_notifications(user_id_param uuid) TO authenticated;
-GRANT ALL ON FUNCTION public.get_user_notifications(user_id_param uuid) TO service_role;
-
-
---
--- Name: FUNCTION get_user_role(user_id uuid); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.get_user_role(user_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.get_user_role(user_id uuid) TO authenticated;
-GRANT ALL ON FUNCTION public.get_user_role(user_id uuid) TO service_role;
-
-
---
--- Name: FUNCTION log_admin_activity(admin_id uuid, action text, description text, additional_data jsonb, activity_timestamp timestamp with time zone); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.log_admin_activity(admin_id uuid, action text, description text, additional_data jsonb, activity_timestamp timestamp with time zone) TO authenticated;
-GRANT ALL ON FUNCTION public.log_admin_activity(admin_id uuid, action text, description text, additional_data jsonb, activity_timestamp timestamp with time zone) TO service_role;
-
-
---
--- Name: FUNCTION mark_notification_read(notification_id_param uuid, user_id_param uuid); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.mark_notification_read(notification_id_param uuid, user_id_param uuid) TO anon;
-GRANT ALL ON FUNCTION public.mark_notification_read(notification_id_param uuid, user_id_param uuid) TO authenticated;
-GRANT ALL ON FUNCTION public.mark_notification_read(notification_id_param uuid, user_id_param uuid) TO service_role;
-
-
---
--- Name: FUNCTION process_installment_payment(p_invoice_id uuid, p_payment_amount numeric, p_admin_name text, p_payment_method text, p_note text); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.process_installment_payment(p_invoice_id uuid, p_payment_amount numeric, p_admin_name text, p_payment_method text, p_note text) TO anon;
-GRANT ALL ON FUNCTION public.process_installment_payment(p_invoice_id uuid, p_payment_amount numeric, p_admin_name text, p_payment_method text, p_note text) TO authenticated;
-GRANT ALL ON FUNCTION public.process_installment_payment(p_invoice_id uuid, p_payment_amount numeric, p_admin_name text, p_payment_method text, p_note text) TO service_role;
-
-
---
--- Name: FUNCTION send_admin_login_notification(admin_name text); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.send_admin_login_notification(admin_name text) TO authenticated;
-GRANT ALL ON FUNCTION public.send_admin_login_notification(admin_name text) TO service_role;
-
-
---
--- Name: FUNCTION send_customer_added_notification(admin_name text, customer_name text); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.send_customer_added_notification(admin_name text, customer_name text) TO authenticated;
-GRANT ALL ON FUNCTION public.send_customer_added_notification(admin_name text, customer_name text) TO service_role;
-
-
---
--- Name: FUNCTION send_invoice_creation_notification(admin_name text, invoice_count integer, period text); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.send_invoice_creation_notification(admin_name text, invoice_count integer, period text) TO authenticated;
-GRANT ALL ON FUNCTION public.send_invoice_creation_notification(admin_name text, invoice_count integer, period text) TO service_role;
-
-
---
--- Name: FUNCTION send_payment_notification(customer_name text, customer_idpl text, invoice_period text, amount numeric, admin_name text, customer_id uuid, invoice_id uuid); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.send_payment_notification(customer_name text, customer_idpl text, invoice_period text, amount numeric, admin_name text, customer_id uuid, invoice_id uuid) TO authenticated;
-GRANT ALL ON FUNCTION public.send_payment_notification(customer_name text, customer_idpl text, invoice_period text, amount numeric, admin_name text, customer_id uuid, invoice_id uuid) TO service_role;
-
-
---
--- Name: FUNCTION update_genieacs_settings_updated_at(); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.update_genieacs_settings_updated_at() TO anon;
-GRANT ALL ON FUNCTION public.update_genieacs_settings_updated_at() TO authenticated;
-GRANT ALL ON FUNCTION public.update_genieacs_settings_updated_at() TO service_role;
-
-
---
--- Name: FUNCTION update_updated_at_column(); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.update_updated_at_column() TO anon;
-GRANT ALL ON FUNCTION public.update_updated_at_column() TO authenticated;
-GRANT ALL ON FUNCTION public.update_updated_at_column() TO service_role;
-
-
---
--- Name: FUNCTION update_whatsapp_settings_updated_at(); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.update_whatsapp_settings_updated_at() TO anon;
-GRANT ALL ON FUNCTION public.update_whatsapp_settings_updated_at() TO authenticated;
-GRANT ALL ON FUNCTION public.update_whatsapp_settings_updated_at() TO service_role;
-
-
---
--- Name: TABLE app_settings; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON TABLE public.app_settings TO anon;
-GRANT ALL ON TABLE public.app_settings TO authenticated;
-GRANT ALL ON TABLE public.app_settings TO service_role;
-
-
---
--- Name: TABLE expenses; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON TABLE public.expenses TO anon;
-GRANT ALL ON TABLE public.expenses TO authenticated;
-GRANT ALL ON TABLE public.expenses TO service_role;
-
-
---
--- Name: TABLE genieacs_settings; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON TABLE public.genieacs_settings TO anon;
-GRANT ALL ON TABLE public.genieacs_settings TO authenticated;
-GRANT ALL ON TABLE public.genieacs_settings TO service_role;
-
-
---
--- Name: TABLE invoices; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON TABLE public.invoices TO anon;
-GRANT ALL ON TABLE public.invoices TO authenticated;
-GRANT ALL ON TABLE public.invoices TO service_role;
-
-
---
--- Name: TABLE notification_reads; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON TABLE public.notification_reads TO authenticated;
-GRANT ALL ON TABLE public.notification_reads TO service_role;
-
-
---
--- Name: TABLE notifications; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON TABLE public.notifications TO authenticated;
-GRANT ALL ON TABLE public.notifications TO service_role;
-
-
---
--- Name: TABLE packages; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON TABLE public.packages TO anon;
-GRANT ALL ON TABLE public.packages TO authenticated;
-GRANT ALL ON TABLE public.packages TO service_role;
-
-
---
--- Name: SEQUENCE packages_id_seq; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON SEQUENCE public.packages_id_seq TO anon;
-GRANT ALL ON SEQUENCE public.packages_id_seq TO authenticated;
-GRANT ALL ON SEQUENCE public.packages_id_seq TO service_role;
-
-
---
--- Name: TABLE payment_methods; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON TABLE public.payment_methods TO anon;
-GRANT ALL ON TABLE public.payment_methods TO authenticated;
-GRANT ALL ON TABLE public.payment_methods TO service_role;
-
-
---
--- Name: TABLE profiles; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON TABLE public.profiles TO anon;
-GRANT ALL ON TABLE public.profiles TO authenticated;
-GRANT ALL ON TABLE public.profiles TO service_role;
-
-
---
--- Name: TABLE whatsapp_settings; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON TABLE public.whatsapp_settings TO anon;
-GRANT ALL ON TABLE public.whatsapp_settings TO authenticated;
-GRANT ALL ON TABLE public.whatsapp_settings TO service_role;
-
-
---
--- Name: TABLE wifi_change_logs; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON TABLE public.wifi_change_logs TO anon;
-GRANT ALL ON TABLE public.wifi_change_logs TO authenticated;
-GRANT ALL ON TABLE public.wifi_change_logs TO service_role;
-
-
---
--- PostgreSQL database dump complete
---
-
-
-
+-- 9.1. Policies: public.profiles
+DROP POLICY IF EXISTS "profiles_admin_all" ON public.profiles;
+CREATE POLICY "profiles_admin_all"
+    ON public.profiles FOR ALL
+    TO authenticated
+    USING (public.get_user_role(auth.uid()) = 'ADMIN')
+    WITH CHECK (public.get_user_role(auth.uid()) = 'ADMIN');
+
+DROP POLICY IF EXISTS "profiles_user_select_own" ON public.profiles;
+CREATE POLICY "profiles_user_select_own"
+    ON public.profiles FOR SELECT
+    TO authenticated
+    USING (id = auth.uid());
+
+DROP POLICY IF EXISTS "profiles_user_update_own" ON public.profiles;
+CREATE POLICY "profiles_user_update_own"
+    ON public.profiles FOR UPDATE
+    TO authenticated
+    USING (id = auth.uid())
+    WITH CHECK (id = auth.uid());
+
+DROP POLICY IF EXISTS "profiles_user_insert_own" ON public.profiles;
+CREATE POLICY "profiles_user_insert_own"
+    ON public.profiles FOR INSERT
+    TO authenticated
+    WITH CHECK (id = auth.uid());
+
+-- 9.2. Policies: public.packages
+DROP POLICY IF EXISTS "packages_read_all" ON public.packages;
+CREATE POLICY "packages_read_all"
+    ON public.packages FOR SELECT
+    USING (TRUE);
+
+DROP POLICY IF EXISTS "packages_admin_all" ON public.packages;
+CREATE POLICY "packages_admin_all"
+    ON public.packages FOR ALL
+    TO authenticated
+    USING (public.get_user_role(auth.uid()) = 'ADMIN')
+    WITH CHECK (public.get_user_role(auth.uid()) = 'ADMIN');
+
+-- 9.3. Policies: public.invoices
+DROP POLICY IF EXISTS "invoices_admin_all" ON public.invoices;
+CREATE POLICY "invoices_admin_all"
+    ON public.invoices FOR ALL
+    TO authenticated
+    USING (public.get_user_role(auth.uid()) = 'ADMIN')
+    WITH CHECK (public.get_user_role(auth.uid()) = 'ADMIN');
+
+DROP POLICY IF EXISTS "invoices_user_select_own" ON public.invoices;
+CREATE POLICY "invoices_user_select_own"
+    ON public.invoices FOR SELECT
+    TO authenticated
+    USING (customer_id = auth.uid());
+
+-- 9.4. Policies: public.expenses
+DROP POLICY IF EXISTS "expenses_admin_all" ON public.expenses;
+CREATE POLICY "expenses_admin_all"
+    ON public.expenses FOR ALL
+    TO authenticated
+    USING (public.get_user_role(auth.uid()) = 'ADMIN')
+    WITH CHECK (public.get_user_role(auth.uid()) = 'ADMIN');
+
+-- 9.5. Policies: public.payment_methods
+DROP POLICY IF EXISTS "payment_methods_read_all" ON public.payment_methods;
+CREATE POLICY "payment_methods_read_all"
+    ON public.payment_methods FOR SELECT
+    USING (TRUE);
+
+DROP POLICY IF EXISTS "payment_methods_admin_all" ON public.payment_methods;
+CREATE POLICY "payment_methods_admin_all"
+    ON public.payment_methods FOR ALL
+    TO authenticated
+    USING (public.get_user_role(auth.uid()) = 'ADMIN')
+    WITH CHECK (public.get_user_role(auth.uid()) = 'ADMIN');
+
+-- 9.6. Policies: public.app_settings
+DROP POLICY IF EXISTS "app_settings_read_all" ON public.app_settings;
+CREATE POLICY "app_settings_read_all"
+    ON public.app_settings FOR SELECT
+    USING (TRUE);
+
+DROP POLICY IF EXISTS "app_settings_admin_all" ON public.app_settings;
+CREATE POLICY "app_settings_admin_all"
+    ON public.app_settings FOR ALL
+    TO authenticated
+    USING (public.get_user_role(auth.uid()) = 'ADMIN')
+    WITH CHECK (public.get_user_role(auth.uid()) = 'ADMIN');
+
+-- 9.7. Policies: public.whatsapp_settings
+DROP POLICY IF EXISTS "whatsapp_settings_read_all" ON public.whatsapp_settings;
+CREATE POLICY "whatsapp_settings_read_all"
+    ON public.whatsapp_settings FOR SELECT
+    USING (TRUE);
+
+DROP POLICY IF EXISTS "whatsapp_settings_authenticated_all" ON public.whatsapp_settings;
+CREATE POLICY "whatsapp_settings_authenticated_all"
+    ON public.whatsapp_settings FOR ALL
+    TO authenticated
+    USING (TRUE)
+    WITH CHECK (TRUE);
+
+-- 9.8. Policies: public.genieacs_settings
+DROP POLICY IF EXISTS "genieacs_settings_all" ON public.genieacs_settings;
+CREATE POLICY "genieacs_settings_all"
+    ON public.genieacs_settings FOR ALL
+    TO authenticated
+    USING (TRUE)
+    WITH CHECK (TRUE);
+
+-- 9.9. Policies: public.wifi_change_logs
+DROP POLICY IF EXISTS "wifi_logs_admin_all" ON public.wifi_change_logs;
+CREATE POLICY "wifi_logs_admin_all"
+    ON public.wifi_change_logs FOR ALL
+    TO authenticated
+    USING (public.get_user_role(auth.uid()) = 'ADMIN')
+    WITH CHECK (public.get_user_role(auth.uid()) = 'ADMIN');
+
+DROP POLICY IF EXISTS "wifi_logs_user_select_own" ON public.wifi_change_logs;
+CREATE POLICY "wifi_logs_user_select_own"
+    ON public.wifi_change_logs FOR SELECT
+    TO authenticated
+    USING (customer_id = auth.uid());
+
+DROP POLICY IF EXISTS "wifi_logs_user_insert_own" ON public.wifi_change_logs;
+CREATE POLICY "wifi_logs_user_insert_own"
+    ON public.wifi_change_logs FOR INSERT
+    TO authenticated
+    WITH CHECK (customer_id = auth.uid());
+
+DROP POLICY IF EXISTS "wifi_logs_user_update_own" ON public.wifi_change_logs;
+CREATE POLICY "wifi_logs_user_update_own"
+    ON public.wifi_change_logs FOR UPDATE
+    TO authenticated
+    USING (customer_id = auth.uid())
+    WITH CHECK (customer_id = auth.uid());
+
+-- 9.10. Policies: public.notifications
+DROP POLICY IF EXISTS "notifications_admin_all" ON public.notifications;
+CREATE POLICY "notifications_admin_all"
+    ON public.notifications FOR ALL
+    TO authenticated
+    USING (public.get_user_role(auth.uid()) = 'ADMIN')
+    WITH CHECK (public.get_user_role(auth.uid()) = 'ADMIN');
+
+DROP POLICY IF EXISTS "notifications_user_select_own" ON public.notifications;
+CREATE POLICY "notifications_user_select_own"
+    ON public.notifications FOR SELECT
+    TO authenticated
+    USING (
+        recipient_user_id = auth.uid() 
+        OR (recipient_role = public.get_user_role(auth.uid()) AND recipient_user_id IS NULL)
+    );
+
+DROP POLICY IF EXISTS "notifications_insert_authenticated" ON public.notifications;
+CREATE POLICY "notifications_insert_authenticated"
+    ON public.notifications FOR INSERT
+    TO authenticated
+    WITH CHECK (TRUE);
+
+-- 9.11. Policies: public.notification_reads
+DROP POLICY IF EXISTS "notification_reads_user_all" ON public.notification_reads;
+CREATE POLICY "notification_reads_user_all"
+    ON public.notification_reads FOR ALL
+    TO authenticated
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
+
+-- ------------------------------------------------------------------------------
+-- 10. HAK AKSES SKEMA & TABEL (GRANTS)
+-- ------------------------------------------------------------------------------
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated, service_role;
+
+-- Pastikan izin masa depan (default privileges)
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES TO anon, authenticated, service_role;
+
+-- Selesai
+SELECT 'Database schema, tables, functions, triggers, storage, and policies setup successfully!' AS result;
