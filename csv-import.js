@@ -397,8 +397,8 @@ export function initializeCSVImport(fetchDataCallback) {
             device_type: row.device_type?.trim() || null,
             ip_static_pppoe: row.ip_static_pppoe?.trim() || null,
             photo_url: row.gender.toUpperCase() === 'LAKI-LAKI'
-                ? 'https://sb-admin-pro.startbootstrap.com/assets/img/illustrations/profiles/profile-2.png'
-                : 'https://sb-admin-pro.startbootstrap.com/assets/img/illustrations/profiles/profile-1.png',
+                ? 'assets/avatar_male.svg'
+                : 'assets/avatar_female.svg',
             installation_date: installationDate,
             package_id: parseInt(row.package_id),
             amount: parseFloat(row.amount),

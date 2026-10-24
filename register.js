@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     full_name: fullName,
                     role: 'ADMIN',
                     status: 'AKTIF',
-                    photo_url: 'https://sb-admin-pro.startbootstrap.com/assets/img/illustrations/profiles/profile-2.png'
+                    photo_url: 'assets/avatar_male.svg'
                 }, { onConflict: 'id' });
 
             if (profileError) {

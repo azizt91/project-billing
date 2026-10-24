@@ -75,7 +75,11 @@ function displayHeader(profile) {
 
     if (userAvatar) {
         if (profile.photo_url) {
-            userAvatar.style.backgroundImage = `url('${profile.photo_url}')`;
+            const avatarUrl = profile.photo_url.includes('sb-admin-pro.startbootstrap.com')
+                ? (profile.gender === 'PEREMPUAN' ? 'assets/avatar_female.svg' : 'assets/avatar_male.svg')
+                : profile.photo_url;
+            userAvatar.style.backgroundImage = `url('${avatarUrl}')`;
+            userAvatar.innerHTML = '';
         } else {
             const initials = (profile.full_name || 'P').charAt(0).toUpperCase();
             userAvatar.innerHTML = `<span class="text-white text-xl font-bold flex items-center justify-center h-full">${initials}</span>`;

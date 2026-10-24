@@ -192,9 +192,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         adminEmail.textContent = currentUser?.email || 'email@example.com';
         
         const photoUrl = data.photo_url;
-        if (photoUrl && photoUrl.startsWith('http')) {
+        if (photoUrl && (photoUrl.startsWith('data:') || photoUrl.startsWith('assets/') || (photoUrl.startsWith('http') && !photoUrl.includes('sb-admin-pro.startbootstrap.com')))) {
             profileAvatar.style.backgroundImage = `url("${photoUrl}")`;
             profileAvatar.innerHTML = ''; 
+        } else if (photoUrl && photoUrl.includes('sb-admin-pro.startbootstrap.com')) {
+            profileAvatar.style.backgroundImage = `url("assets/avatar_male.svg")`;
+            profileAvatar.innerHTML = '';
         } else {
             const initials = (data.full_name || 'A').charAt(0).toUpperCase();
             profileAvatar.style.backgroundImage = `none`;

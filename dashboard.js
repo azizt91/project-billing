@@ -43,7 +43,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 
                 // Set the avatar image
                 if (profile.photo_url && userAvatar) {
-                    userAvatar.style.backgroundImage = `url('${profile.photo_url}')`;
+                    const avatarUrl = profile.photo_url.includes('sb-admin-pro.startbootstrap.com')
+                        ? 'assets/avatar_male.svg'
+                        : profile.photo_url;
+                    userAvatar.style.backgroundImage = `url('${avatarUrl}')`;
+                    userAvatar.innerHTML = '';
                 } else if (userAvatar) {
                     // Optional: Fallback to initials if no photo
                     const initials = (profile.full_name || 'A').charAt(0).toUpperCase();

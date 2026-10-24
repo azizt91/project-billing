@@ -313,6 +313,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderCustomerList(data);
     }
 
+    function getCustomerAvatar(profile) {
+        if (!profile) return 'assets/login_illustration.svg';
+        const url = profile.photo_url;
+        if (url && (url.startsWith('data:') || url.startsWith('assets/') || (url.startsWith('http') && !url.includes('sb-admin-pro.startbootstrap.com')))) {
+            return url;
+        }
+        const gender = (profile.gender || '').toUpperCase();
+        if (gender === 'LAKI-LAKI') return 'assets/avatar_male.svg';
+        if (gender === 'PEREMPUAN') return 'assets/avatar_female.svg';
+        return 'assets/login_illustration.svg';
+    }
+
     function renderCustomerList(data) {
         customerList.innerHTML = '';
         if (!data || data.length === 0) {
@@ -343,11 +355,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 dateInfo = `Terdaftar: ${installDate}`;
             }
 
+            const avatarUrl = getCustomerAvatar(profile);
             const customerItem = document.createElement('div');
             customerItem.className = "flex items-center gap-4 bg-white px-4 min-h-[72px] py-2 justify-between border-b border-gray-100 cursor-pointer hover:bg-gray-50";
             customerItem.innerHTML = `
                 <div class="flex items-center gap-4 w-full">
-                    <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-14 w-14 shrink-0" style="background-image: url('${profile.photo_url || 'assets/login_illustration.svg'}');"></div>
+                    <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-14 w-14 shrink-0 shadow-sm" style="background-image: url('${avatarUrl}');"></div>
                     <div class="flex flex-col justify-center overflow-hidden">
                         <p class="text-[#110e1b] text-base font-medium truncate">${profile.full_name}</p>
                         <p class="text-[#625095] text-sm">${dateInfo}</p>
@@ -647,7 +660,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Update UI dengan data yang sudah benar
         if (profileImage) {
-            profileImage.style.backgroundImage = `url('${profile.photo_url || 'assets/login_illustration.svg'}')`;
+            profileImage.style.backgroundImage = `url('${getCustomerAvatar(profile)}')`;
         }
         if (customerName) customerName.textContent = profile.full_name || '-';
         if (customerId) customerId.textContent = profile.idpl || '-';
@@ -731,11 +744,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const gender = document.getElementById('customer-gender').value;
 
             // Set photo_url based on gender (same logic as create)
-            let photoUrl = null;
+            let photoUrl = 'assets/login_illustration.svg';
             if (gender === 'LAKI-LAKI') {
-                photoUrl = 'https://sb-admin-pro.startbootstrap.com/assets/img/illustrations/profiles/profile-2.png';
+                photoUrl = 'assets/avatar_male.svg';
             } else if (gender === 'PEREMPUAN') {
-                photoUrl = 'https://sb-admin-pro.startbootstrap.com/assets/img/illustrations/profiles/profile-1.png';
+                photoUrl = 'assets/avatar_female.svg';
             }
 
             // Get latitude/longitude
@@ -897,13 +910,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Add Logic
             const genderElement = document.getElementById('customer-gender');
             const gender = genderElement.value;
-            let photoUrl = '';
+            let photoUrl = 'assets/login_illustration.svg';
 
             // Set photo_url based on gender
             if (gender === 'LAKI-LAKI') {
-                photoUrl = 'https://sb-admin-pro.startbootstrap.com/assets/img/illustrations/profiles/profile-2.png';
+                photoUrl = 'assets/avatar_male.svg';
             } else if (gender === 'PEREMPUAN') {
-                photoUrl = 'https://sb-admin-pro.startbootstrap.com/assets/img/illustrations/profiles/profile-1.png';
+                photoUrl = 'assets/avatar_female.svg';
             }
 
             // Generate IDPL berurut
