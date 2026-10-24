@@ -2232,6 +2232,13 @@ CREATE POLICY "Allow authenticated users to update whatsapp_settings" ON public.
 
 
 --
+-- Name: whatsapp_settings Allow authenticated users to insert whatsapp_settings; Type: POLICY; Schema: public; Owner: postgres
+--
+
+CREATE POLICY "Allow authenticated users to insert whatsapp_settings" ON public.whatsapp_settings FOR INSERT TO authenticated WITH CHECK (true);
+
+
+--
 -- Name: payment_methods Anyone can read active payment methods; Type: POLICY; Schema: public; Owner: postgres
 --
 

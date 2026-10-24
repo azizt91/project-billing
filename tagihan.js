@@ -633,6 +633,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Ambil template
             try {
+                let foundTemplate = '';
+                // 1. Coba dari Supabase
                 const { data, error } = await supabase
                     .from('whatsapp_settings')
                     .select('setting_value')
@@ -640,7 +642,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     .single();
 
                 if (!error && data && data.setting_value) {
-                    textareaTemplate.value = data.setting_value;
+                    foundTemplate = data.setting_value;
+                } else {
+                    // 2. Coba dari LocalStorage fallback
+                    try {
+                        const localWa = JSON.parse(localStorage.getItem('whatsapp_settings') || '{}');
+                        if (localWa && localWa.template_custom_message) {
+                            foundTemplate = localWa.template_custom_message;
+                        }
+                    } catch (e) {}
+                }
+
+                if (foundTemplate) {
+                    textareaTemplate.value = foundTemplate;
                 } else {
                     const payText = await fetchActivePaymentMethodsText();
                     textareaTemplate.value = `Informasi Tagihan WiFi Anda\n\nHai Bapak/Ibu {nama_pelanggan},\nID Pelanggan: {idpl}\n\nInformasi tagihan Bapak/Ibu bulan ini adalah:\nJumlah Tagihan: {total_tagihan}\nPeriode Tagihan: {periode}\n\nMetode Pembayaran:\n${payText}\n\nTerima kasih atas kepercayaan Anda menggunakan layanan kami.\n_____________________________\n*Ini adalah pesan otomatis. Jika telah membayar tagihan, abaikan pesan ini.`;
@@ -679,9 +693,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Simpan template
             try {
-                await supabase
+                try {
+                    const localWa = JSON.parse(localStorage.getItem('whatsapp_settings') || '{}');
+                    localWa.template_custom_message = template;
+                    localStorage.setItem('whatsapp_settings', JSON.stringify(localWa));
+                } catch (e) {}
+
+                const { error: upsertErr } = await supabase
                     .from('whatsapp_settings')
                     .upsert({ setting_key: 'template_custom_message', setting_value: template }, { onConflict: 'setting_key' });
+
+                if (upsertErr) {
+                    await supabase
+                        .from('whatsapp_settings')
+                        .update({ setting_value: template, updated_at: new Date().toISOString() })
+                        .eq('setting_key', 'template_custom_message');
+                }
             } catch (e) {
                 console.error('Failed to save template', e);
             }
@@ -1260,6 +1287,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (templateObj && templateObj.setting_value) customTemplate = templateObj.setting_value;
                 if (urlObj && urlObj.setting_value) appUrl = urlObj.setting_value;
             }
+
+            // Fallback ke localStorage jika di database belum ada
+            try {
+                const localWa = JSON.parse(localStorage.getItem('whatsapp_settings') || '{}');
+                if ((!customTemplate || customTemplate.includes('Informasi Tagihan WiFi Anda')) && localWa.template_custom_message) {
+                    customTemplate = localWa.template_custom_message;
+                }
+                if ((!appUrl || appUrl === 'http://ai-net-billing.netlify.app/') && localWa.app_url) {
+                    appUrl = localWa.app_url;
+                }
+            } catch (e) {}
 
             if (rowData && rowData.profiles) {
                 const { data: email } = await supabase.rpc('get_user_email', {

@@ -136,34 +136,79 @@ export default class AppSettings {
         await this.loadGenieACSSettings();
     }
 
+    getDefaultWhatsAppTemplate() {
+        return `Informasi Tagihan WiFi Anda
+
+Hai Bapak/Ibu {nama_pelanggan},
+ID Pelanggan: {idpl}
+
+Informasi tagihan Bapak/Ibu bulan ini adalah:
+Jumlah Tagihan: {total_tagihan}
+Periode Tagihan: {periode}
+
+Metode Pembayaran:
+{metode_pembayaran}
+
+Terima kasih atas kepercayaan Anda menggunakan layanan kami.
+_____________________________
+*Ini adalah pesan otomatis. Jika telah membayar tagihan, abaikan pesan ini.*`;
+    }
+
+    populateWhatsAppForm(settings) {
+        if (!settings) return;
+        if (settings.auto_notification_enabled !== undefined) {
+            const isEnabled = settings.auto_notification_enabled === 'true' || settings.auto_notification_enabled === true;
+            const toggle = document.getElementById('auto-notification-toggle');
+            if (toggle) toggle.checked = isEnabled;
+        }
+        if (settings.fonnte_token !== undefined) {
+            const input = document.getElementById('fonnte-token-input');
+            if (input && settings.fonnte_token) input.value = settings.fonnte_token;
+        }
+        if (settings.app_url !== undefined) {
+            const input = document.getElementById('app-url-input');
+            if (input && settings.app_url) input.value = settings.app_url;
+        }
+        if (settings.template_custom_message !== undefined) {
+            const input = document.getElementById('template-custom-message');
+            if (input && settings.template_custom_message) input.value = settings.template_custom_message;
+        }
+    }
+
     async loadWhatsAppSettings() {
+        // 1. Tampilkan dari localStorage terlebih dahulu (instant)
+        const localWa = this.getLocalWhatsAppSettings();
+        if (localWa) {
+            this.populateWhatsAppForm(localWa);
+        }
+
+        // Pastikan template textarea tidak kosong jika belum ada data sama sekali
+        const templateTextarea = document.getElementById('template-custom-message');
+        if (templateTextarea && !templateTextarea.value.trim()) {
+            templateTextarea.value = this.getDefaultWhatsAppTemplate();
+        }
+
+        // 2. Ambil data terbaru dari Supabase
         try {
             const { data, error } = await supabase
                 .from('whatsapp_settings')
                 .select('*');
 
-            if (error) throw error;
+            if (error) {
+                console.warn('Warning fetching whatsapp_settings from DB (menggunakan fallback):', error.message);
+                return;
+            }
 
             if (data && data.length > 0) {
+                const settingsObj = {};
                 data.forEach(setting => {
-                    if (setting.setting_key === 'auto_notification_enabled') {
-                        const isEnabled = setting.setting_value === 'true';
-                        const toggle = document.getElementById('auto-notification-toggle');
-                        if (toggle) toggle.checked = isEnabled;
-                    } else if (setting.setting_key === 'fonnte_token') {
-                        const input = document.getElementById('fonnte-token-input');
-                        if (input) input.value = setting.setting_value || '';
-                    } else if (setting.setting_key === 'app_url') {
-                        const input = document.getElementById('app-url-input');
-                        if (input) input.value = setting.setting_value || '';
-                    } else if (setting.setting_key === 'template_custom_message') {
-                        const input = document.getElementById('template-custom-message');
-                        if (input) input.value = setting.setting_value || '';
-                    }
+                    settingsObj[setting.setting_key] = setting.setting_value;
                 });
+                this.populateWhatsAppForm(settingsObj);
+                this.saveLocalWhatsAppSettings(settingsObj);
             }
         } catch (error) {
-            console.error('Error loading WhatsApp settings:', error);
+            console.error('Error loading WhatsApp settings from Supabase:', error);
         }
     }
 
@@ -504,71 +549,100 @@ export default class AppSettings {
         return settings ? JSON.parse(settings) : null;
     }
 
+    saveLocalWhatsAppSettings(settings) {
+        localStorage.setItem('whatsapp_settings', JSON.stringify(settings));
+    }
+
+    getLocalWhatsAppSettings() {
+        const settings = localStorage.getItem('whatsapp_settings');
+        return settings ? JSON.parse(settings) : null;
+    }
+
     async saveWhatsAppSettings() {
         try {
+            const templateVal = document.getElementById('template-custom-message')?.value || '';
+            const appUrlVal = document.getElementById('app-url-input')?.value.trim() || '';
+            const fonnteTokenVal = document.getElementById('fonnte-token-input')?.value.trim() || '';
+            const autoNotifVal = document.getElementById('auto-notification-toggle')?.checked ? 'true' : 'false';
+
             const whatsappSettings = [
                 {
                     setting_key: 'auto_notification_enabled',
-                    setting_value: document.getElementById('auto-notification-toggle').checked ? 'true' : 'false'
+                    setting_value: autoNotifVal
                 },
                 {
                     setting_key: 'fonnte_token',
-                    setting_value: document.getElementById('fonnte-token-input').value.trim()
+                    setting_value: fonnteTokenVal
                 },
                 {
                     setting_key: 'app_url',
-                    setting_value: document.getElementById('app-url-input').value.trim()
+                    setting_value: appUrlVal
                 },
                 {
                     setting_key: 'template_custom_message',
-                    setting_value: document.getElementById('template-custom-message').value
+                    setting_value: templateVal
                 }
             ];
 
-            // Update each setting
+            // 1. Selalu simpan ke localStorage sebagai backup pasti
+            const localMap = {};
+            whatsappSettings.forEach(s => localMap[s.setting_key] = s.setting_value);
+            this.saveLocalWhatsAppSettings(localMap);
+
+            // 2. Simpan ke database Supabase
             for (const setting of whatsappSettings) {
-                const { error } = await supabase
+                // Coba UPSERT terlebih dahulu (jika baris belum ada di database)
+                const { error: upsertErr } = await supabase
                     .from('whatsapp_settings')
-                    .update({
+                    .upsert({
+                        setting_key: setting.setting_key,
                         setting_value: setting.setting_value,
                         updated_at: new Date().toISOString()
-                    })
-                    .eq('setting_key', setting.setting_key);
+                    }, { onConflict: 'setting_key' });
 
-                if (error) {
-                    console.error(`Error updating ${setting.setting_key}:`, error);
+                if (upsertErr) {
+                    console.warn(`Upsert gagal untuk ${setting.setting_key}, mencoba update fallback:`, upsertErr.message);
+
+                    // Fallback ke UPDATE jika baris sudah ada atau RLS membatasi INSERT
+                    const { error: updateErr } = await supabase
+                        .from('whatsapp_settings')
+                        .update({
+                            setting_value: setting.setting_value,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('setting_key', setting.setting_key);
+
+                    if (updateErr) {
+                        console.error(`Error updating ${setting.setting_key}:`, updateErr);
+                    }
                 }
             }
 
-            console.log('✅ WhatsApp settings saved successfully');
+            console.log('✅ WhatsApp settings saved successfully to LocalStorage & Supabase');
         } catch (error) {
             console.error('Error saving WhatsApp settings:', error);
-            throw error;
+            // Tetap jangan throw error fatal agar simpan pengaturan umum tidak gagal total
         }
     }
 
     async resetWhatsAppTemplates() {
-        if (!confirm('Reset semua template WhatsApp ke default?\n\nPerubahan tidak dapat dibatalkan.')) {
+        if (!confirm('Reset template WhatsApp ke format default?\n\nPerubahan belum disimpan ke server sebelum Anda mengklik tombol SIMPAN.')) {
             return;
         }
 
         try {
-            const defaultTemplates = {
-                template_custom_message: `Pesan dari Admin
-
-Hai Bapak/Ibu {nama_pelanggan},
-ID Pelanggan: {idpl}
-
-{pesan_custom}
-
-_____________________________
-*Pesan otomatis dari AI.NET*`
-            };
+            const defaultTemplate = this.getDefaultWhatsAppTemplate();
 
             // Update templates in form
-            document.getElementById('template-custom-message').value = defaultTemplates.template_custom_message;
+            const input = document.getElementById('template-custom-message');
+            if (input) input.value = defaultTemplate;
 
-            alert('✅ Template berhasil direset ke default!\n\nJangan lupa klik SIMPAN untuk menyimpan perubahan.');
+            // Simpan ke local cache juga
+            const localWa = this.getLocalWhatsAppSettings() || {};
+            localWa.template_custom_message = defaultTemplate;
+            this.saveLocalWhatsAppSettings(localWa);
+
+            alert('✅ Template berhasil direset ke default!\n\nKlik tombol SIMPAN di bawah untuk menyimpan perubahan secara permanen.');
         } catch (error) {
             console.error('Error resetting templates:', error);
             alert('❌ Gagal reset template: ' + error.message);
@@ -596,25 +670,34 @@ _____________________________
                 }
             ];
 
-            // Update each setting
+            // Update each setting with upsert fallback
             for (const setting of genieacsSettings) {
-                const { error } = await supabase
+                const { error: upsertErr } = await supabase
                     .from('genieacs_settings')
-                    .update({
+                    .upsert({
+                        setting_key: setting.setting_key,
                         setting_value: setting.setting_value,
                         updated_at: new Date().toISOString()
-                    })
-                    .eq('setting_key', setting.setting_key);
+                    }, { onConflict: 'setting_key' });
 
-                if (error) {
-                    console.error(`Error updating ${setting.setting_key}:`, error);
+                if (upsertErr) {
+                    const { error } = await supabase
+                        .from('genieacs_settings')
+                        .update({
+                            setting_value: setting.setting_value,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('setting_key', setting.setting_key);
+
+                    if (error) {
+                        console.error(`Error updating ${setting.setting_key}:`, error);
+                    }
                 }
             }
 
             console.log('✅ GenieACS settings saved successfully');
         } catch (error) {
             console.error('Error saving GenieACS settings:', error);
-            throw error;
         }
     }
 }
